@@ -11,7 +11,7 @@ export default function ItemCard({ item }: { item: Item }) {
   };
 
   return (
-    <div 
+    <div
       className="bg-white rounded-lg shadow p-4 flex flex-col dashboard-card cursor-pointer transition-transform hover:scale-105"
       onClick={handleClick}
     >

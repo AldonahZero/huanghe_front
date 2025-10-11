@@ -90,7 +90,10 @@ export default function BuyOrdersSection({
                     .map((pos) => {
                       const percentage = (pos.count / dist.totalOrders) * 100;
                       return (
-                        <div key={pos.position} className="flex items-center gap-2">
+                        <div
+                          key={pos.position}
+                          className="flex items-center gap-2"
+                        >
                           <div className="text-sm text-gray-600 w-16">
                             位次 {pos.position}
                           </div>

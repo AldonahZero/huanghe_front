@@ -84,9 +84,7 @@ export default function ProjectDetailPage() {
             <div className="text-sm text-gray-500 mt-1">
               项目ID: {projectData.projectId}
             </div>
-            <div className="text-sm text-gray-500">
-              数据更新频率: 每小时
-            </div>
+            <div className="text-sm text-gray-500">数据更新频率: 每小时</div>
           </div>
         </div>
       </div>
@@ -101,10 +99,7 @@ export default function ProjectDetailPage() {
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-sm text-gray-500 mb-1">求购总数</div>
           <div className="text-2xl font-bold text-blue-600">
-            {analysisResult.topBuyers.reduce(
-              (sum, b) => sum + b.orderCount,
-              0
-            )}
+            {analysisResult.topBuyers.reduce((sum, b) => sum + b.orderCount, 0)}
           </div>
           <div className="text-xs text-gray-400 mt-1">
             活跃求购者: {analysisResult.topBuyers.length}人
