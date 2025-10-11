@@ -346,17 +346,16 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
     if (!inner) return;
     textCycleAnimRef.current?.kill();
 
-  const currentLabel = opening ? "选项卡" : "关闭";
-  const targetLabel = opening ? "关闭" : "选项卡";
+    const currentLabel = opening ? "选项卡" : "关闭";
+    const targetLabel = opening ? "关闭" : "选项卡";
     const cycles = 3;
     const seq: string[] = [currentLabel];
-    let last = currentLabel;
+    // alternate between current and target labels to create the cycling effect
     for (let i = 0; i < cycles; i++) {
-      last = last === "Menu" ? "Close" : "Menu";
-      seq.push(last);
+      seq.push(i % 2 === 0 ? targetLabel : currentLabel);
     }
-    if (last !== targetLabel) seq.push(targetLabel);
-    seq.push(targetLabel);
+    // ensure the last item is the target label (but don't duplicate it)
+    if (seq[seq.length - 1] !== targetLabel) seq.push(targetLabel);
     setTextLines(seq);
 
     gsap.set(inner, { yPercent: 0 });

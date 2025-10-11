@@ -9,7 +9,11 @@ export default function DashboardSidebar() {
       ariaLabel: "进入 概览",
       link: "/dashboard",
     },
-    { label: "个人页面", ariaLabel: "打开 个人页面", link: "/dashboard/profile" },
+    {
+      label: "个人页面",
+      ariaLabel: "打开 个人页面",
+      link: "/dashboard/profile",
+    },
     { label: "设置", ariaLabel: "打开 设置", link: "/dashboard/settings" },
   ];
 

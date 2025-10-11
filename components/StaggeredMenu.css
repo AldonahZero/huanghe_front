@@ -36,16 +36,15 @@
 }
 
 .sm-logo {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   user-select: none;
-  /* center the logo horizontally inside the header without affecting the toggle's layout */
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-left: 0; /* reset any left offset so center is exact */
-  z-index: 21; /* sit above prelayers but below header controls if needed */
-  pointer-events: auto; /* allow clicks on the logo if it's a link */
+  position: relative;
+  left: auto;
+  transform: none;
+  margin-left: 0.35rem; /* small gap between toggle text and logo */
+  z-index: 21;
+  pointer-events: auto;
 }
 
 .sm-logo-img {
@@ -76,6 +75,11 @@
 }
 
 .sm-mobile-floating .sm-logo-img {
+  display: none;
+}
+
+/* Ensure in the mobile floating variant the logo wrapper itself doesn't occupy flow space */
+.sm-mobile-floating .sm-logo {
   display: none;
 }
 

@@ -1,0 +1,11 @@
+.lanyard-wrapper {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* removed transform to avoid creating a new stacking context which can
+     make fixed overlays non-interactive on some mobile browsers */
+}
