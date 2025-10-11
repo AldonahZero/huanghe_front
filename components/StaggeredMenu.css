@@ -22,8 +22,10 @@
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 2em;
+  /* keep toggle aligned to the right in the normal flow; logo will be absolutely centered */
+  justify-content: flex-end;
+  padding: 1.25em 1.5em;
+  padding-left: 2.25em; /* push header contents slightly in from the very left */
   background: transparent;
   pointer-events: none;
   z-index: 20;
@@ -37,6 +39,13 @@
   display: flex;
   align-items: center;
   user-select: none;
+  /* center the logo horizontally inside the header without affecting the toggle's layout */
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-left: 0; /* reset any left offset so center is exact */
+  z-index: 21; /* sit above prelayers but below header controls if needed */
+  pointer-events: auto; /* allow clicks on the logo if it's a link */
 }
 
 .sm-logo-img {
@@ -44,6 +53,7 @@
   height: 32px;
   width: auto;
   object-fit: contain;
+  margin-right: 0.35rem; /* bring logo closer to menu text */
 }
 
 .sm-toggle {
@@ -58,6 +68,37 @@
   font-weight: 500;
   line-height: 1;
   overflow: visible;
+}
+
+/* Mobile floating variant tweaks */
+.sm-mobile-floating .staggered-menu-header {
+  padding: 0.5rem;
+}
+
+.sm-mobile-floating .sm-logo-img {
+  display: none;
+}
+
+.sm-mobile-floating .sm-toggle {
+  background: var(--sm-accent, #5227ff);
+  color: #fff;
+  padding: 0.7rem 0.9rem;
+  border-radius: 9999px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sm-mobile-floating .sm-toggle .sm-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.sm-mobile-floating .sm-toggle-textWrap {
+  display: none;
 }
 
 .sm-toggle:focus-visible {
@@ -265,18 +306,18 @@
 .sm-panel-item {
   position: relative;
   color: #000;
-  font-weight: 600;
-  font-size: 4rem;
+  font-weight: 700;
+  font-size: 2.3rem;
   cursor: pointer;
-  line-height: 1;
-  letter-spacing: -2px;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
   text-transform: uppercase;
   transition:
     background 0.25s,
     color 0.25s;
   display: inline-block;
   text-decoration: none;
-  padding-right: 1.4em;
+  padding-right: 1.2em;
 }
 
 .staggered-menu-panel .sm-socials-list .sm-socials-link {
@@ -316,14 +357,19 @@
   content: counter(smItem, decimal-leading-zero);
   position: absolute;
   top: 0.1em;
-  right: 3.2em;
-  font-size: 18px;
+  right: 2rem; /* move closer to the edge, away from text */
+  font-size: 14px; /* smaller numbering */
   font-weight: 400;
   color: var(--sm-accent, #5227ff);
   letter-spacing: 0;
   pointer-events: none;
   user-select: none;
   opacity: var(--sm-num-opacity, 0);
+}
+
+/* Ensure items leave space for numbering */
+.sm-panel-item {
+  padding-right: 4rem; /* leave room on the right for the numeric label */
 }
 
 @media (max-width: 1024px) {
@@ -348,4 +394,62 @@
   .staggered-menu-wrapper[data-open] .sm-logo-img {
     filter: invert(100%);
   }
+}
+
+/* Hide numbering on small screens to avoid layout conflicts (defensive even if prop disables it) */
+/* Mobile: show numbering as a left badge */
+@media (max-width: 640px) {
+  .sm-panel-list[data-numbering] .sm-panel-item::after {
+    left: 0.6rem;
+    right: auto;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    background: var(--sm-accent, #5227ff);
+    color: #fff;
+    padding: 4px 6px;
+    border-radius: 10px;
+    opacity: 1 !important;
+  }
+
+  .sm-panel-item {
+    padding-left: 3.2rem; /* leave space for the left badge */
+    padding-right: 1rem;
+    font-size: 4rem; /* increase mobile font size */
+  }
+}
+
+/* Sidebar variant: keep panel constrained to the sidebar width so it doesn't cover main content */
+.staggered-menu--sidebar .staggered-menu-panel,
+.staggered-menu--sidebar .sm-prelayers {
+  width: 320px !important;
+  max-width: 320px !important;
+}
+
+.staggered-menu--sidebar {
+  overflow: hidden;
+}
+
+/* Desktop: larger font for menu items when using wider sidebar */
+@media (min-width: 768px) {
+  .staggered-menu--sidebar .sm-panel-item {
+    font-size: 2.8rem;
+  }
+}
+
+/* Dashboard grid layout: sidebar and content columns
+   - default: sidebar column 0 (hidden), content 1fr
+   - when body.sidebar-open: sidebar 320px, content 1fr */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 0 1fr;
+  transition: grid-template-columns 240ms ease;
+}
+
+body.sidebar-open .dashboard-grid {
+  grid-template-columns: 320px 1fr;
+}
+
+.dashboard-content {
+  width: 100%;
 }

@@ -24,6 +24,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Provide a fallback favicon using the provided logo.ico */}
+        {/* <link rel="icon" href="/logo.ico" /> */}
+        <link rel="shortcut icon" href="/logo.ico" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

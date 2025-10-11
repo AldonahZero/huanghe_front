@@ -6,11 +6,11 @@ import { dashboardItems } from "@/lib/dashboardData";
 export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex">
+      <div className="dashboard-grid">
         <DashboardSidebar />
-        <div className="flex-1">
+        <div className="dashboard-content">
           <DashboardTopbar />
-          <main className="p-6">
+          <main className="p-6 dashboard-main">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-semibold">监控饰品</h2>
             </div>

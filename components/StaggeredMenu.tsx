@@ -60,7 +60,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
   const iconRef = useRef<HTMLSpanElement | null>(null);
   const textInnerRef = useRef<HTMLSpanElement | null>(null);
   const textWrapRef = useRef<HTMLSpanElement | null>(null);
-  const [textLines, setTextLines] = useState<string[]>(["Menu", "Close"]);
+  const [textLines, setTextLines] = useState<string[]>(["选项卡", "关闭"]);
 
   const openTlRef = useRef<gsap.core.Timeline | null>(null);
   const closeTweenRef = useRef<gsap.core.Tween | null>(null);
@@ -346,8 +346,8 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
     if (!inner) return;
     textCycleAnimRef.current?.kill();
 
-    const currentLabel = opening ? "Menu" : "Close";
-    const targetLabel = opening ? "Close" : "Menu";
+  const currentLabel = opening ? "选项卡" : "关闭";
+  const targetLabel = opening ? "关闭" : "选项卡";
     const cycles = 3;
     const seq: string[] = [currentLabel];
     let last = currentLabel;
@@ -429,7 +429,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
         <button
           ref={toggleBtnRef}
           className="sm-toggle"
-          aria-label={open ? "Close menu" : "Open menu"}
+          aria-label={open ? "关闭 菜单" : "打开 菜单"}
           aria-expanded={open}
           aria-controls="staggered-menu-panel"
           onClick={toggleMenu}
