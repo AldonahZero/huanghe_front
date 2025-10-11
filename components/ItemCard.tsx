@@ -1,9 +1,20 @@
+"use client";
 import { Item } from "../lib/dashboardData";
+import { useRouter } from "next/navigation";
 import "./ItemCard.css";
 
 export default function ItemCard({ item }: { item: Item }) {
+  const router = useRouter();
+
+  const handleClick = () => {
+    router.push(`/dashboard/project/${item.id}`);
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow p-4 flex flex-col dashboard-card">
+    <div 
+      className="bg-white rounded-lg shadow p-4 flex flex-col dashboard-card cursor-pointer transition-transform hover:scale-105"
+      onClick={handleClick}
+    >
       <div className="flex items-center gap-4">
         <img
           src={item.image}

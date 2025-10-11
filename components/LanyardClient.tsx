@@ -307,12 +307,17 @@ export default function LanyardClient({
 interface BandProps {
   maxSpeed?: number;
   minSpeed?: number;
-}
-
+  onHoverChange?: (hovered: boolean) => void;
   glbUrl?: string | null;
-function Band({ maxSpeed = 50, minSpeed = 0 }: BandProps) {
+}
+function Band({
+  maxSpeed = 50,
+  minSpeed = 0,
+  onHoverChange,
+  glbUrl,
+}: BandProps) {
   // Using "any" for refs since the exact types depend on Rapier's internals
-function Band({ maxSpeed = 50, minSpeed = 0, onHoverChange, glbUrl }: BandProps) {
+  const band = useRef<any>(null);
   const fixed = useRef<any>(null);
   const j1 = useRef<any>(null);
   const j2 = useRef<any>(null);
