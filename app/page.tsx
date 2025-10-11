@@ -22,9 +22,9 @@ export default function Home() {
                 text={headline}
                 className="text-3xl"
                 shuffleDirection="right"
-                duration={0.35}
+                duration={0.85}
                 animationMode="evenodd"
-                shuffleTimes={1}
+                shuffleTimes={3}
                 stagger={0.03}
                 threshold={0.1}
                 triggerOnce={true}
