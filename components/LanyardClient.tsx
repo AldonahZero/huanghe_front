@@ -57,11 +57,55 @@ export default function LanyardClient({
   // track canvas remount key to recreate Canvas when context is lost
   const [canvasKey, setCanvasKey] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [glbUrl, setGlbUrl] = useState<string | null>(null);
   const canvasListenersRef = useRef<{
     el?: HTMLCanvasElement | null;
     onLost?: EventListenerOrEventListenerObject;
     onRestored?: EventListenerOrEventListenerObject;
   }>({});
+
+  // Try to cache/load card.glb from CacheStorage to avoid repeated network fetches.
+  useEffect(() => {
+    let mountedLocal = true;
+    let objectUrl: string | null = null;
+
+    async function ensureCached() {
+      try {
+        if (typeof window !== "undefined" && "caches" in window) {
+          const cache = await caches.open("assets-lanyard-v1");
+          const cached = await cache.match(cardGLB);
+          if (cached) {
+            const blob = await cached.blob();
+            objectUrl = URL.createObjectURL(blob);
+            if (mountedLocal) setGlbUrl(objectUrl);
+            return;
+          }
+
+          const resp = await fetch(cardGLB, { cache: "no-store" });
+          if (resp && resp.ok) {
+            try {
+              await cache.put(cardGLB, resp.clone());
+            } catch (e) {
+              // put may fail on opaque responses or cross-origin; ignore
+            }
+            const blob = await resp.blob();
+            objectUrl = URL.createObjectURL(blob);
+            if (mountedLocal) setGlbUrl(objectUrl);
+            return;
+          }
+        }
+      } catch (err) {
+        // fallback to direct URL
+      }
+      if (mountedLocal) setGlbUrl(cardGLB);
+    }
+
+    ensureCached();
+    return () => {
+      mountedLocal = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, []);
   useEffect(() => {
     // mark client mounted to avoid creating canvas during SSR/hydration
     setMounted(true);
@@ -222,7 +266,7 @@ export default function LanyardClient({
         >
           <ambientLight intensity={Math.PI} />
           <Physics gravity={gravity} timeStep={1 / 60}>
-            <Band />
+            <Band glbUrl={glbUrl} />
           </Physics>
           <Environment blur={0.75}>
             <Lightformer
@@ -265,9 +309,10 @@ interface BandProps {
   minSpeed?: number;
 }
 
+  glbUrl?: string | null;
 function Band({ maxSpeed = 50, minSpeed = 0 }: BandProps) {
   // Using "any" for refs since the exact types depend on Rapier's internals
-  const band = useRef<any>(null);
+function Band({ maxSpeed = 50, minSpeed = 0, onHoverChange, glbUrl }: BandProps) {
   const fixed = useRef<any>(null);
   const j1 = useRef<any>(null);
   const j2 = useRef<any>(null);
@@ -287,7 +332,7 @@ function Band({ maxSpeed = 50, minSpeed = 0 }: BandProps) {
     linearDamping: 4,
   };
 
-  const { nodes, materials } = useGLTF(cardGLB) as any;
+  const { nodes, materials } = useGLTF((glbUrl as string) || cardGLB) as any;
   const texture: any = useTexture(lanyard);
   const [curve] = useState(
     () =>

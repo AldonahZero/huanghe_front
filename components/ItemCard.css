@@ -1,0 +1,8 @@
+.dashboard-main .dashboard-card {
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.dashboard-main .dashboard-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.28), 0 4px 12px rgba(0,0,0,0.08);
+}

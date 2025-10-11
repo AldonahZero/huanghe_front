@@ -1,8 +1,9 @@
 import { Item } from "../lib/dashboardData";
+import "./ItemCard.css";
 
 export default function ItemCard({ item }: { item: Item }) {
   return (
-    <div className="bg-white rounded-lg shadow p-4 flex flex-col">
+    <div className="bg-white rounded-lg shadow p-4 flex flex-col dashboard-card">
       <div className="flex items-center gap-4">
         <img
           src={item.image}
