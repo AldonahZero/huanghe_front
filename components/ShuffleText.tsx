@@ -10,9 +10,16 @@ interface ShuffleTextProps {
   onComplete?: () => void;
 }
 
-const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{};:,.<>?/";
+const CHARS =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{};:,.<>?/";
 
-export default function ShuffleText({ text, className = "", duration = 1200, fps = 30, onComplete }: ShuffleTextProps) {
+export default function ShuffleText({
+  text,
+  className = "",
+  duration = 1200,
+  fps = 30,
+  onComplete,
+}: ShuffleTextProps) {
   const elRef = useRef<HTMLSpanElement | null>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -59,7 +66,5 @@ export default function ShuffleText({ text, className = "", duration = 1200, fps
     };
   }, [text, duration, fps, onComplete]);
 
-  return (
-    <span aria-hidden className={className} ref={elRef} />
-  );
+  return <span aria-hidden className={className} ref={elRef} />;
 }

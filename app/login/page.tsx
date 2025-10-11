@@ -1,15 +1,16 @@
-import React from 'react';
-import ShuffleText from '@/components/ShuffleText';
-import LoginForm from '@/components/LoginForm';
+import React from "react";
+import Shuffle from "@/components/Shuffle";
+import LoginForm from "@/components/LoginForm";
+import LetterGlitch from "@/components/LetterGlitch";
 
 export const metadata = {
-  title: '登录 - Huanghe 前端',
-  description: '登录到 CS:GO 饰品交易监控平台'
+  title: "登录 - Huanghe 前端",
+  description: "登录到 CS:GO 饰品交易监控平台",
 };
 
 export default function LoginPage() {
   // server component: just layout and pass to client components
-  const headline = '欢迎使用 黄河 监控平台';
+  const headline = "欢迎使用 Huanghe 监控平台";
 
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -19,8 +20,19 @@ export default function LoginPage() {
             <h1 className="text-3xl font-extrabold text-gray-900">
               {/* ShuffleText is client; keep an inline placeholder for SSR fallback */}
               <span className="inline-block">
-                {/* Client component will animate this text */}
-                <ShuffleText text={headline} className="text-3xl" />
+                {/* Client Shuffle component will animate this text */}
+                <Shuffle
+                  text={headline}
+                  className="text-3xl"
+                  shuffleDirection="right"
+                  duration={0.35}
+                  animationMode="evenodd"
+                  shuffleTimes={1}
+                  stagger={0.03}
+                  threshold={0.1}
+                  triggerOnce={true}
+                  triggerOnHover={true}
+                />
               </span>
             </h1>
             <p className="mt-2 text-sm text-gray-500">使用你的账号登录以继续</p>

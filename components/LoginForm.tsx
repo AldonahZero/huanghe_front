@@ -1,14 +1,17 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 interface Props {
-  onLogin?: (values: { username: string; password: string }) => Promise<void> | void;
+  onLogin?: (values: {
+    username: string;
+    password: string;
+  }) => Promise<void> | void;
 }
 
 export default function LoginForm({ onLogin }: Props) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,7 +19,7 @@ export default function LoginForm({ onLogin }: Props) {
     e.preventDefault();
     setError(null);
     if (!username || !password) {
-      setError('用户名和密码不能为空');
+      setError("用户名和密码不能为空");
       return;
     }
     setLoading(true);
@@ -26,7 +29,7 @@ export default function LoginForm({ onLogin }: Props) {
       else await new Promise((res) => setTimeout(res, 800));
       // TODO: 成功后跳转至 /dashboard
     } catch (e: any) {
-      setError(e?.message || '登录失败');
+      setError(e?.message || "登录失败");
     } finally {
       setLoading(false);
     }
@@ -35,7 +38,9 @@ export default function LoginForm({ onLogin }: Props) {
   return (
     <form onSubmit={submit} className="w-full max-w-sm space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700">用户名</label>
+        <label className="block text-sm font-medium text-gray-700">
+          用户名
+        </label>
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value)}
@@ -63,7 +68,7 @@ export default function LoginForm({ onLogin }: Props) {
           className="w-full inline-flex justify-center rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 disabled:opacity-60"
           disabled={loading}
         >
-          {loading ? '登录中...' : '登录'}
+          {loading ? "登录中..." : "登录"}
         </button>
       </div>
     </form>
