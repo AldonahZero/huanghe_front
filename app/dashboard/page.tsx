@@ -1,5 +1,6 @@
 import ItemCard from "@/components/ItemCard";
 import { dashboardItems } from "@/lib/dashboardData";
+import ProjectsList from "@/components/ProjectsList";
 
 export default function DashboardPage() {
   return (
@@ -12,6 +13,11 @@ export default function DashboardPage() {
         {dashboardItems.map((it) => (
           <ItemCard key={it.id} item={it} />
         ))}
+      </div>
+
+      <div className="mt-10">
+        <h3 className="text-lg font-semibold mb-4">我的项目</h3>
+        <ProjectsList />
       </div>
     </main>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Props {
   onLogin?: (values: {
@@ -10,6 +11,13 @@ interface Props {
 }
 
 export default function LoginForm({ onLogin }: Props) {
+  const auth = (() => {
+    try {
+      return useAuth();
+    } catch (e) {
+      return null as any;
+    }
+  })();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,8 +34,10 @@ export default function LoginForm({ onLogin }: Props) {
     try {
       // stub: 调用外部 onLogin 或简单延迟模拟请求
       if (onLogin) await onLogin({ username, password });
-      else await new Promise((res) => setTimeout(res, 800));
-      // TODO: 成功后跳转至 /dashboard
+      else {
+        if (auth) await auth.login({ username, password });
+        else await new Promise((res) => setTimeout(res, 800));
+      }
     } catch (e: any) {
       setError(e?.message || "登录失败");
     } finally {

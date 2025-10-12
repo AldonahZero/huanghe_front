@@ -1,0 +1,853 @@
+openapi: 3.0.3
+info:
+  title: HuangHe Crawl API
+  version: 0.1.0
+  description: |
+    完整 API 文档，包含认证（JWT）、项目管理、团队与邀请码、以及爬虫分析结果查询接口。
+    基于 `app.py` 中实现的路由。所有受保护接口均使用 Bearer (JWT) 鉴权。
+servers:
+  - url: http://localhost:5001
+    description: Local development server
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        role:
+          type: string
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT access token (Bearer)
+        user:
+          $ref: '#/components/schemas/User'
+    Team:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        owner_id:
+          type: integer
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    InviteCode:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        team_id:
+          type: integer
+        uses_allowed:
+          type: integer
+        uses_remaining:
+          type: integer
+        created_by_admin_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        template_id:
+          type: integer
+        owner_id:
+          type: integer
+        is_active:
+          type: boolean
+        member_level_required:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    AnalysisResult:
+      type: object
+      properties:
+        template_id:
+          type: integer
+        analysis_type:
+          type: string
+        result:
+          type: object
+        analysis_time:
+          type: string
+          format: date-time
+    PriceHistoryItem:
+      type: object
+      properties:
+        max_price:
+          type: number
+          format: float
+        min_price:
+          type: number
+          format: float
+        avg_price:
+          type: number
+          format: float
+        median_price:
+          type: number
+          format: float
+        record_time:
+          type: string
+          format: date-time
+paths:
+  /api/health:
+    get:
+      summary: 健康检查
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+  /api/auth/register:
+    post:
+      summary: 注册（可选携带邀请码加入团队）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                invite_code:
+                  type: string
+      responses:
+        "201":
+          description: Registered (user + token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        "400":
+          description: Invalid input or invite
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/login:
+    post:
+      summary: 登录并获取 JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: login success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              examples:
+                success:
+                  value:
+                    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    user:
+                      id: 10
+                      username: "alice"
+        "400":
+          description: invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/templates:
+    get:
+      summary: 获取所有配置的模板ID
+      responses:
+        "200":
+          description: List of template ids
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  templates:
+                    type: array
+                    items:
+                      type: integer
+                    example: [49082]
+                  count:
+                    type: integer
+                    example: 1
+  /api/latest/{template_id}:
+    get:
+      summary: 获取指定模板的最新爬取数据
+      parameters:
+        - in: path
+          name: template_id
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: data_type
+          schema:
+            type: string
+          description: purchase_orders 或 sell_commodities
+      responses:
+        "200":
+          description: latest raw crawl data
+          content:
+            application/json:
+              schema:
+                type: object
+        "404":
+          description: No data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/analysis/{template_id}:
+    get:
+      summary: 获取指定模板的分析结果
+      parameters:
+        - in: path
+          name: template_id
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: analysis_type
+          schema:
+            type: string
+          description: purchase, sell, profit, market_report
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: analysis result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResult'
+              examples:
+                market_report:
+                  value:
+                    template_id: 49082
+                    analysis_type: market_report
+                    analysis_time: "2025-10-12T12:00:00Z"
+                    result:
+                      purchase_analysis:
+                        price_stats:
+                          max: 36500
+                          min: 33000
+                          average: 34500
+                      sell_analysis:
+                        price_stats:
+                          max: 40000
+                          min: 34000
+                          average: 36000
+                      profit_analysis:
+                        profit_amount: 1500
+                        profit_rate: 0.042
+                        is_profitable: true
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/analysis/{template_id}/types:
+    get:
+      summary: 获取指定模板的所有分析类型
+      parameters:
+        - in: path
+          name: template_id
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: analysis types
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  template_id:
+                    type: integer
+                  analysis_types:
+                    type: array
+                    items:
+                      type: string
+                  count:
+                    type: integer
+  /api/price-history/{template_id}:
+    get:
+      summary: 获取价格历史
+      parameters:
+        - in: path
+          name: template_id
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: data_type
+          schema:
+            type: string
+          description: purchase 或 sell
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: 返回记录数
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: price history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  template_id:
+                    type: integer
+                  data_type:
+                    type: string
+                  count:
+                    type: integer
+                  history:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PriceHistoryItem'
+  /api/market-summary:
+    get:
+      summary: 获取所有模板的市场摘要
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: market summaries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  summaries:
+                    type: array
+                    items:
+                      type: object
+  /api/projects:
+    get:
+      summary: 列出项目（管理员查看所有，老师查看自己创建的）
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+    post:
+      summary: 创建项目（老师受配额限制，管理员无限）
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                template_id:
+                  type: integer
+                member_level_required:
+                  type: string
+      responses:
+        "201":
+          description: Created project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+              examples:
+                created:
+                  value:
+                    project:
+                      id: 123
+                      name: "AP1"
+                      template_id: 11111
+  /api/projects/{project_id}:
+    get:
+      summary: 获取项目详情（仅 owner 或 admin）
+      parameters:
+        - in: path
+          name: project_id
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+    put:
+      summary: 更新项目（仅 owner 或 admin）
+      parameters:
+        - in: path
+          name: project_id
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                template_id:
+                  type: integer
+                is_active:
+                  type: boolean
+                member_level_required:
+                  type: string
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+    delete:
+      summary: 删除项目（仅 owner 或 admin）
+      parameters:
+        - in: path
+          name: project_id
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+  /api/admin/users/{user_id}/quota:
+    post:
+      summary: 管理员设置用户的项目配额
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quota:
+                  type: integer
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /api/admin/projects/bulk:
+    post:
+      summary: 管理员批量启停项目
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_ids:
+                  type: array
+                  items:
+                    type: integer
+                action:
+                  type: string
+                  enum: [activate, deactivate]
+      responses:
+        "200":
+          description: Bulk operation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: integer
+  /api/admin/projects/search:
+    get:
+      summary: 管理员按 template_id 搜索项目
+      parameters:
+        - in: query
+          name: template_id
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+  /api/admin/teams:
+    post:
+      summary: 管理员创建团队
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                avatar_url:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Created team
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+  /api/admin/teams/{team_id}/invites:
+    post:
+      summary: 管理员为团队生成邀请码
+      parameters:
+        - in: path
+          name: team_id
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uses_allowed:
+                  type: integer
+      responses:
+        "201":
+          description: Created invite
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteCode'
+  /api/teams/{team_id}:
+    put:
+      summary: 更新团队信息（管理员或团队负责人/老师）
+      parameters:
+        - in: path
+          name: team_id
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                avatar_url:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "200":
+          description: Updated team
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+  /api/teachers/{teacher_id}/invites:
+    get:
+      summary: 老师查看自己发出的邀请
+      parameters:
+        - in: path
+          name: teacher_id
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List invites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InviteCode'
+  /openapi.yaml:
+    get:
+      summary: 返回 OpenAPI 文档 YAML（方便前端直接获取文档）
+      responses:
+        "200":
+          description: OpenAPI YAML
+          content:
+            application/x-yaml:
+              schema:
+                type: string
+                example: "openapi: 3.0.3\n..."
+security:
+  - BearerAuth: []
+                    created:
+                      value:
+                        project:
+                          id: 123
+                          name: "AP1"
+                          template_id: 11111
+
+      /api/projects/{project_id}:
+        get:
+          summary: 获取项目详情（仅 owner 或 admin）
+          security:
+            - XUserId: []
+          parameters:
+            - in: path
+              name: project_id
+              required: true
+              schema:
+                type: integer
+          responses:
+            "200":
+              description: Project
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/Project"
+        put:
+          summary: 更新项目（仅 owner 或 admin）
+          security:
+            - XUserId: []
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    template_id:
+                      type: integer
+                    is_active:
+                      type: boolean
+                    member_level_required:
+                      type: string
+          responses:
+            "200":
+              description: Updated project
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/Project"
+        delete:
+          summary: 删除项目（仅 owner 或 admin）
+          security:
+            - XUserId: []
+          responses:
+            "200":
+              description: Deleted
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      deleted:
+                        type: boolean
+
+      /api/admin/projects/bulk:
+        post:
+          summary: 管理员批量启停项目
+          security:
+            - XUserId: []
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    project_ids:
+                      type: array
+                      items:
+                        type: integer
+                    action:
+                      type: string
+                      enum: [activate, deactivate]
+          responses:
+            "200":
+              description: Bulk operation result
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      updated:
+                        type: integer
+
+      /api/admin/projects/search:
+        get:
+          summary: 管理员按 template_id 搜索项目
+          security:
+            - XUserId: []
+          parameters:
+            - in: query
+              name: template_id
+              schema:
+                type: integer
+          responses:
+            "200":
+              description: Search results
+              content:
+                application/json:
+                  schema:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Project"
+
+      /api/admin/users/{user_id}/quota:
+        post:
+          summary: 管理员设置用户的项目配额
+          security:
+            - XUserId: []
+          parameters:
+            - in: path
+              name: user_id
+              required: true
+              schema:
+                type: integer
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    quota:
+                      type: integer
+          responses:
+            "200":
+              description: Updated user
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/User"
+
+    components:
+      schemas:
+        Project:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            template_id:
+              type: integer
+            owner_id:
+              type: integer
+            is_active:
+              type: boolean
+            member_level_required:
+              type: string
+            created_at:
+              type: string
+              format: date-time
