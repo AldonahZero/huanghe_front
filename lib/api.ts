@@ -35,13 +35,14 @@ async function request<T = unknown>(path: string, init: RequestInit = {}): Promi
     let data: unknown = null;
     try {
         data = text ? JSON.parse(text) : null;
-    } catch (e) {
+    } catch {
         // non-json response
         data = text;
     }
 
     if (!res.ok) {
-        const message = (data && typeof data === "object" && (data as any).message) || (data && typeof data === "object" && (data as any).error) || res.statusText || "Request failed";
+        const dataObj = data && typeof data === "object" && data !== null ? (data as Record<string, unknown>) : undefined;
+        const message = (dataObj && (dataObj["message"] ?? dataObj["error"])) ?? res.statusText ?? "Request failed";
         const err: { message: string; status: number; payload?: unknown } = {
             message: String(message),
             status: res.status,
@@ -138,7 +139,7 @@ export async function deleteProject(projectId: number): Promise<{ deleted: boole
     });
 }
 
-export default {
+const apiClient = {
     setAuthToken,
     login,
     register,
@@ -153,3 +154,5 @@ export default {
     updateProject,
     deleteProject,
 };
+
+export default apiClient;

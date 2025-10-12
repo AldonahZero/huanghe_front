@@ -11,13 +11,8 @@ interface Props {
 }
 
 export default function LoginForm({ onLogin }: Props) {
-  const auth = (() => {
-    try {
-      return useAuth();
-    } catch (e) {
-      return null as any;
-    }
-  })();
+  // useAuth can be used here because this is a client component and AuthProvider is mounted at root
+  const auth = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,7 +33,8 @@ export default function LoginForm({ onLogin }: Props) {
         if (auth) await auth.login({ username, password });
         else await new Promise((res) => setTimeout(res, 800));
       }
-    } catch (e: any) {
+    } catch (err) {
+      const e = err as { message?: string } | undefined;
       setError(e?.message || "登录失败");
     } finally {
       setLoading(false);

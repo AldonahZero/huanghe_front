@@ -24,8 +24,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // load token from localStorage
-    const t = typeof window !== "undefined" ? localStorage.getItem("hh_token") : null;
-    const u = typeof window !== "undefined" ? localStorage.getItem("hh_user") : null;
+    const t =
+      typeof window !== "undefined" ? localStorage.getItem("hh_token") : null;
+    const u =
+      typeof window !== "undefined" ? localStorage.getItem("hh_user") : null;
     if (t) {
       setToken(t);
       api.setAuthToken(t);

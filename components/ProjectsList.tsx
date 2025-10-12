@@ -2,18 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import * as api from "@/lib/api";
+import type { Project as TProject, ProjectsList as TProjectsList } from "@/types/api";
 
 export default function ProjectsList() {
-  const [projects, setProjects] = useState<any[] | null>(null);
+  const [projects, setProjects] = useState<TProject[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    api
-      .getProjects()
-      .then((res) => {
+    api.getProjects()
+      .then((res: TProjectsList) => {
         if (!mounted) return;
         setProjects(res?.projects || []);
       })
