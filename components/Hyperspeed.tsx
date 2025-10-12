@@ -1012,6 +1012,36 @@ class App {
     }
     this.container = container;
 
+    // Safari 兼容性处理：检测 WebGL 支持和 getShaderPrecisionFormat
+
+    let webglSupported = true;
+    try {
+      const canvas = document.createElement("canvas");
+      const gl =
+        canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+      if (!gl || !(gl instanceof WebGLRenderingContext)) {
+        webglSupported = false;
+      } else {
+        // 检查 getShaderPrecisionFormat 是否可用
+        const precisionFormat = gl.getShaderPrecisionFormat(
+          gl.VERTEX_SHADER,
+          gl.HIGH_FLOAT
+        );
+        if (!precisionFormat || typeof precisionFormat.precision !== "number") {
+          // Safari 可能返回 null
+          webglSupported = false;
+        }
+      }
+    } catch (e) {
+      webglSupported = false;
+    }
+
+    if (!webglSupported) {
+      throw new Error(
+        "WebGL not supported or getShaderPrecisionFormat unavailable. Please use a compatible browser."
+      );
+    }
+
     this.renderer = new THREE.WebGLRenderer({
       antialias: false,
       alpha: true,

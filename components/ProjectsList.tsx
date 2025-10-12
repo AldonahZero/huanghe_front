@@ -2,17 +2,32 @@
 
 import React, { useEffect, useState } from "react";
 import * as api from "@/lib/api";
-import type { Project as TProject, ProjectsList as TProjectsList } from "@/types/api";
+import type {
+  Project as TProject,
+  ProjectsList as TProjectsList,
+} from "@/types/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ProjectsList() {
+  const { token, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<TProject[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
+    // wait until auth provider finished initializing
+    if (authLoading) return;
+
+    // if no token, don't call protected endpoints
+    if (!token) {
+      setError("未授权，请先登录");
+      return;
+    }
+
     setLoading(true);
-    api.getProjects()
+    api
+      .getProjects()
       .then((res: TProjectsList) => {
         if (!mounted) return;
         setProjects(res?.projects || []);
@@ -26,8 +41,9 @@ export default function ProjectsList() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [authLoading, token]);
 
+  if (authLoading) return <div>正在验证身份…</div>;
   if (loading) return <div>加载项目中...</div>;
   if (error) return <div className="text-red-600">{error}</div>;
   if (!projects || projects.length === 0)

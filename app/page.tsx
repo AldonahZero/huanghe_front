@@ -60,7 +60,7 @@ export default function Home() {
                 clipRule="evenodd"
               />
             </svg>
-            <span>登录</span>
+            <span>开 始</span>
           </Link>
         </div>
       </div>

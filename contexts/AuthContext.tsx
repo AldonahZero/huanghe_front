@@ -11,6 +11,12 @@ type AuthContextValue = {
   token: string | null;
   loading: boolean;
   login: (values: { username: string; password: string }) => Promise<void>;
+  register: (values: {
+    username: string;
+    password: string;
+    invite_code?: string;
+  }) => Promise<void>;
+  permissions: string[];
   logout: () => void;
 };
 
@@ -19,6 +25,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -28,6 +35,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       typeof window !== "undefined" ? localStorage.getItem("hh_token") : null;
     const u =
       typeof window !== "undefined" ? localStorage.getItem("hh_user") : null;
+    const p =
+      typeof window !== "undefined"
+        ? localStorage.getItem("hh_permissions")
+        : null;
     if (t) {
       setToken(t);
       api.setAuthToken(t);
@@ -37,6 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(JSON.parse(u));
       } catch (e) {
         setUser(null);
+      }
+    }
+    if (p) {
+      try {
+        setPermissions(JSON.parse(p));
+      } catch (e) {
+        setPermissions([]);
       }
     }
     setLoading(false);
@@ -51,6 +69,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (res.user) {
       setUser(res.user);
       localStorage.setItem("hh_user", JSON.stringify(res.user));
+      // persist permissions if provided
+      if (
+        (res.user as any).permissions &&
+        Array.isArray((res.user as any).permissions)
+      ) {
+        setPermissions((res.user as any).permissions);
+        localStorage.setItem(
+          "hh_permissions",
+          JSON.stringify((res.user as any).permissions)
+        );
+      } else if ((res.user as any).role) {
+        const role = (res.user as any).role as string;
+        const mapped = role === "admin" ? ["admin"] : [role];
+        setPermissions(mapped);
+        localStorage.setItem("hh_permissions", JSON.stringify(mapped));
+      }
     }
     // redirect to dashboard
     try {
@@ -60,19 +94,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const register = async (values: {
+    username: string;
+    password: string;
+    invite_code?: string;
+  }) => {
+    const res = await api.register(values);
+    // API may return token + user similar to login
+    if (res && typeof res === "object" && (res as any).token) {
+      const token = (res as any).token as string;
+      setToken(token);
+      api.setAuthToken(token);
+      localStorage.setItem("hh_token", token);
+      if ((res as any).user) {
+        setUser((res as any).user);
+        localStorage.setItem("hh_user", JSON.stringify((res as any).user));
+        if (
+          ((res as any).user as any).permissions &&
+          Array.isArray(((res as any).user as any).permissions)
+        ) {
+          setPermissions(((res as any).user as any).permissions);
+          localStorage.setItem(
+            "hh_permissions",
+            JSON.stringify(((res as any).user as any).permissions)
+          );
+        } else if (((res as any).user as any).role) {
+          const role = ((res as any).user as any).role as string;
+          const mapped = role === "admin" ? ["admin"] : [role];
+          setPermissions(mapped);
+          localStorage.setItem("hh_permissions", JSON.stringify(mapped));
+        }
+      }
+      try {
+        router.push("/dashboard");
+      } catch (e) {}
+      return;
+    }
+    // If no token, just return; caller may handle success differently
+    return;
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
+    setPermissions([]);
     api.setAuthToken(null);
     localStorage.removeItem("hh_token");
     localStorage.removeItem("hh_user");
+    localStorage.removeItem("hh_permissions");
     try {
       router.push("/login");
     } catch (e) {}
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, token, loading, login, register, permissions, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

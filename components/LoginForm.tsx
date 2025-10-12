@@ -2,6 +2,9 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Button } from "./ui/button";
 
 interface Props {
   onLogin?: (values: {
@@ -42,41 +45,36 @@ export default function LoginForm({ onLogin }: Props) {
   };
 
   return (
-    <form onSubmit={submit} className="w-full max-w-sm space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          用户名
-        </label>
-        <input
+    <form onSubmit={submit} className="w-full max-w-sm space-y-5">
+      <div className="space-y-2">
+        <Label htmlFor="username">用户名</Label>
+        <Input
+          id="username"
           value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-2 focus:ring-indigo-500"
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setUsername(e.target.value)
+          }
           placeholder="请输入用户名"
+          autoComplete="username"
         />
       </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">密码</label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="password">密码</Label>
+        <Input
+          id="password"
           type="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-2 focus:ring-indigo-500"
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setPassword(e.target.value)
+          }
           placeholder="请输入密码"
+          autoComplete="current-password"
         />
       </div>
-
-      {error && <div className="text-sm text-red-600">{error}</div>}
-
-      <div>
-        <button
-          type="submit"
-          className="w-full inline-flex justify-center rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 disabled:opacity-60"
-          disabled={loading}
-        >
-          {loading ? "登录中..." : "登录"}
-        </button>
-      </div>
+      {error && <div className="text-sm text-red-600 mt-2">{error}</div>}
+      <Button type="submit" className="w-full mt-2" disabled={loading}>
+        {loading ? "登录中..." : "登录"}
+      </Button>
     </form>
   );
 }

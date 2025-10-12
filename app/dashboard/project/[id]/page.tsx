@@ -10,6 +10,9 @@ import TimeRangeSelector from "@/components/TimeRangeSelector";
 import BuyOrdersSection from "@/components/BuyOrdersSection";
 import SellListingsSection from "@/components/SellListingsSection";
 import TransactionsSection from "@/components/TransactionsSection";
+import { useAuth } from "@/contexts/AuthContext";
+import * as api from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
 
 export default function ProjectDetailPage() {
   const params = useParams();

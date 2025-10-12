@@ -1,6 +1,6 @@
 import React from "react";
 import Shuffle from "@/components/Shuffle";
-import LoginForm from "@/components/LoginForm";
+import AuthTabs from "@/components/AuthTabs";
 import LetterGlitch from "@/components/LetterGlitch";
 
 export const metadata = {
@@ -72,7 +72,8 @@ export default function LoginPage() {
             </div>
 
             <div className="">
-              <LoginForm />
+              {/* 登录/注册卡片切换 */}
+              <AuthTabs />
             </div>
           </div>
         </div>
