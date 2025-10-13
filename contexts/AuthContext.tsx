@@ -4,7 +4,23 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import * as api from "@/lib/api";
 import { useRouter } from "next/navigation";
 
-type User = any;
+type User = {
+  id: number;
+  username: string;
+  user_nickname?: string;
+  email?: string;
+  role: string;
+  member_type?: string;
+  member_level?: string;
+  avatar_url?: string;
+  team_id?: number;
+  team_name?: string;
+  invited_by_user_id?: number;
+  invited_by_username?: string;
+  project_quota: number;
+  created_at: string;
+  updated_at: string;
+};
 
 type AuthContextValue = {
   user: User | null;
@@ -62,30 +78,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (values: { username: string; password: string }) => {
     const res = await api.login(values);
-    if (!res?.token) throw new Error("无效的登录响应：缺少 token");
+    if (!res?.token) throw new Error("无效的登录响应:缺少 token");
     setToken(res.token);
     api.setAuthToken(res.token);
     localStorage.setItem("hh_token", res.token);
-    if (res.user) {
-      setUser(res.user);
-      localStorage.setItem("hh_user", JSON.stringify(res.user));
-      // persist permissions if provided
-      if (
-        (res.user as any).permissions &&
-        Array.isArray((res.user as any).permissions)
-      ) {
-        setPermissions((res.user as any).permissions);
-        localStorage.setItem(
-          "hh_permissions",
-          JSON.stringify((res.user as any).permissions)
-        );
-      } else if ((res.user as any).role) {
-        const role = (res.user as any).role as string;
-        const mapped = role === "admin" ? ["admin"] : [role];
-        setPermissions(mapped);
-        localStorage.setItem("hh_permissions", JSON.stringify(mapped));
+
+    // 获取完整的用户信息
+    try {
+      const userProfile = await api.getUserProfile();
+      setUser(userProfile);
+      localStorage.setItem("hh_user", JSON.stringify(userProfile));
+
+      // 设置权限
+      const role = userProfile.role;
+      const mapped = role === "admin" ? ["admin"] : [role];
+      setPermissions(mapped);
+      localStorage.setItem("hh_permissions", JSON.stringify(mapped));
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+      // 如果获取用户信息失败,使用登录响应中的基本信息
+      if (res.user) {
+        setUser(res.user as any);
+        localStorage.setItem("hh_user", JSON.stringify(res.user));
+
+        if ((res.user as any).role) {
+          const role = (res.user as any).role as string;
+          const mapped = role === "admin" ? ["admin"] : [role];
+          setPermissions(mapped);
+          localStorage.setItem("hh_permissions", JSON.stringify(mapped));
+        }
       }
     }
+
     // redirect to dashboard
     try {
       router.push("/dashboard");

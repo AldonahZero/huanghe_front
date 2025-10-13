@@ -2,11 +2,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  generateMockProjectData,
-  analyzeProjectData,
-} from "@/lib/projectAnalysis";
-import { AnalysisResult } from "@/types/project";
 import TimeRangeSelector from "@/components/TimeRangeSelector";
 import BuyOrdersSection from "@/components/BuyOrdersSection";
 import SellListingsSection from "@/components/SellListingsSection";
@@ -22,13 +17,11 @@ export default function ProjectDetailPage() {
   const { token, loading: authLoading } = useAuth();
 
   const [timeRange, setTimeRange] = useState(24); // 默认24小时
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
-    null
-  );
-  const [projectData, setProjectData] = useState<ReturnType<
-    typeof generateMockProjectData
-  > | null>(null);
-  const [realProjectData, setRealProjectData] = useState<any>(null);
+  const [analysisData, setAnalysisData] =
+    useState<api.ProjectAnalysisResponse | null>(null);
+  const [statistics, setStatistics] = useState<
+    api.ProjectAnalysisResponse["statistics"] | null
+  >(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,23 +37,18 @@ export default function ProjectDetailPage() {
       return;
     }
 
-    // Load real project data from backend
+    // Load project analysis data from backend
     setLoading(true);
     api
-      .getProject(Number(projectId))
-      .then((project: any) => {
+      .getProjectAnalysis(Number(projectId), timeRange)
+      .then((response) => {
         if (!mounted) return;
-        setRealProjectData(project);
-
-        // Still use mock data for analysis sections (until backend provides analysis data)
-        const data = generateMockProjectData(projectId);
-        setProjectData(data);
-        const result = analyzeProjectData(data.hourlyData, timeRange);
-        setAnalysisResult(result);
+        setAnalysisData(response);
+        setStatistics(response.statistics);
       })
       .catch((err) => {
         if (!mounted) return;
-        setError(err?.message || "加载项目失败");
+        setError(err?.message || "加载项目分析数据失败");
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -98,7 +86,7 @@ export default function ProjectDetailPage() {
     );
   }
 
-  if (loading || !projectData || !analysisResult) {
+  if (loading || !analysisData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -109,19 +97,17 @@ export default function ProjectDetailPage() {
     );
   }
 
-  // Extract real project info
-  const item = realProjectData?.item || {};
-  const itemName =
-    item.market_name ||
-    item.market_hash_name ||
-    realProjectData?.name ||
-    projectData.projectName;
-  const itemImage = item.icon_url || projectData.itemImage || "/file.svg";
-  const itemExterior = item.exterior || "";
-  const itemWeapon = item.weapon || "";
-  const itemRarity = item.rarity || "";
-  const isActive = realProjectData?.is_active ?? true;
-  const createdAt = realProjectData?.created_at;
+  // Extract project info from backend response
+  const project = analysisData.project;
+  const analysis = analysisData.analysis;
+  const item = project.item;
+  const itemName = item?.market_name || project.name;
+  const itemImage = item?.icon_url || "/file.svg";
+  const itemExterior = item?.exterior || "";
+  const itemWeapon = item?.weapon || "";
+  const itemRarity = ""; // Backend doesn't return rarity in item object
+  const isActive = project.is_active;
+  const createdAt = project.created_at;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -232,36 +218,31 @@ export default function ProjectDetailPage() {
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-sm text-gray-500 mb-1">求购总数</div>
           <div className="text-2xl font-bold text-blue-600">
-            {analysisResult.topBuyers.reduce((sum, b) => sum + b.orderCount, 0)}
+            {statistics?.totalBuyOrders || 0}
           </div>
           <div className="text-xs text-gray-400 mt-1">
-            活跃求购者: {analysisResult.topBuyers.length}人
+            活跃求购者: {statistics?.activeBuyers || 0}人
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-sm text-gray-500 mb-1">挂售总数</div>
           <div className="text-2xl font-bold text-green-600">
-            {analysisResult.topSellers.reduce(
-              (sum, s) => sum + s.listingCount,
-              0
-            )}
+            {statistics?.totalSellListings || 0}
           </div>
           <div className="text-xs text-gray-400 mt-1">
-            活跃卖家: {analysisResult.topSellers.length}人
+            活跃卖家: {statistics?.activeSellers || 0}人
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-500 mb-1">成交总数</div>
+          <div className="text-sm text-gray-500 mb-1">平均价格</div>
           <div className="text-2xl font-bold text-purple-600">
-            {analysisResult.topBuyers_transactions.reduce(
-              (sum, u) => sum + u.totalCount,
-              0
-            )}
+            ¥{statistics?.avgPrice.toFixed(2) || "0.00"}
           </div>
           <div className="text-xs text-gray-400 mt-1">
-            活跃交易对: {analysisResult.activePairs.length}组
+            最高: ¥{statistics?.maxPrice.toFixed(2)} / 最低: ¥
+            {statistics?.minPrice.toFixed(2)}
           </div>
         </div>
       </div>
@@ -269,24 +250,44 @@ export default function ProjectDetailPage() {
       {/* 求购数据 */}
       <div className="mb-6">
         <BuyOrdersSection
-          topBuyers={analysisResult.topBuyers}
-          positionDistribution={analysisResult.buyerPositionDistribution}
+          topBuyers={analysis.topBuyers}
+          positionDistribution={analysis.buyerPositionDistribution}
         />
       </div>
 
       {/* 在售数据 */}
       <div className="mb-6">
-        <SellListingsSection topSellers={analysisResult.topSellers} />
+        <SellListingsSection topSellers={analysis.topSellers} />
       </div>
 
       {/* 成交数据 */}
-      <div className="mb-6">
-        <TransactionsSection
-          topBuyers={analysisResult.topBuyers_transactions}
-          topSellers={analysisResult.topSellers_transactions}
-          activePairs={analysisResult.activePairs}
-        />
-      </div>
+      {(analysis.topBuyers_transactions.length > 0 ||
+        analysis.topSellers_transactions.length > 0 ||
+        analysis.activePairs.length > 0) && (
+        <div className="mb-6">
+          <TransactionsSection
+            topBuyers={analysis.topBuyers_transactions}
+            topSellers={analysis.topSellers_transactions}
+            activePairs={analysis.activePairs}
+          />
+        </div>
+      )}
+
+      {/* 交易数据加密提示 */}
+      {analysis.topBuyers_transactions.length === 0 &&
+        analysis.topSellers_transactions.length === 0 &&
+        analysis.activePairs.length === 0 && (
+          <div className="mb-6">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+              <div className="text-yellow-800 text-lg font-medium mb-2">
+                🔒 交易数据已加密
+              </div>
+              <div className="text-yellow-600 text-sm">
+                成交买入榜、成交卖出榜和活跃交易对数据目前无法获取
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }

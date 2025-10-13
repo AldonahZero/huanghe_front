@@ -31,7 +31,8 @@ export interface PositionDistribution {
 // 在售数据
 export interface SellListing {
     userId: string;
-    userName: string;
+    userName: string;        // 店铺名
+    userNickName?: string;   // 用户昵称
     avatarUrl?: string;
     listingCount: number;    // 挂售数量
     timestamp: number;

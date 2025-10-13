@@ -1,20 +1,48 @@
 "use client";
 
+import { useAuth } from "@/contexts/AuthContext";
 import StaggeredMenu from "./StaggeredMenu";
 
 export default function DashboardSidebar() {
-  const menuItems = [
+  const { user } = useAuth();
+  
+  // 基础菜单项
+  const baseMenuItems = [
     {
       label: "概览",
       ariaLabel: "进入 概览",
       link: "/dashboard",
     },
     {
-      label: "个人页面",
-      ariaLabel: "打开 个人页面",
+      label: "团队信息",
+      ariaLabel: "查看 团队信息",
       link: "/dashboard/profile",
     },
-    { label: "设置", ariaLabel: "打开 设置", link: "/dashboard/settings" },
+    {
+      label: "个人信息",
+      ariaLabel: "管理 个人信息",
+      link: "/dashboard/account",
+    },
+  ];
+
+  // 如果是管理员或教师,添加团队设置选项
+  const teamSettingItem = {
+    label: "团队设置",
+    ariaLabel: "管理 团队设置",
+    link: "/dashboard/team",
+  };
+
+  const settingsItem = { 
+    label: "设置", 
+    ariaLabel: "打开 设置", 
+    link: "/dashboard/settings" 
+  };
+
+  // 组合菜单项
+  const menuItems = [
+    ...baseMenuItems,
+    ...(user?.role === "admin" || user?.role === "teacher" ? [teamSettingItem] : []),
+    settingsItem,
   ];
 
   const socialItems = [

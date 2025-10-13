@@ -139,6 +139,169 @@ export async function deleteProject(projectId: number): Promise<{ deleted: boole
     });
 }
 
+// Project Analysis
+export interface ProjectAnalysisResponse {
+    project: {
+        id: number;
+        name: string;
+        template_id: number;
+        is_active: boolean;
+        created_at: string | null;
+        item: {
+            market_name: string;
+            weapon: string;
+            exterior: string;
+            icon_url: string;
+        } | null;
+    };
+    analysis: {
+        timeRange: number;
+        timestamp: string;
+        topBuyers: Array<{
+            userId: string;
+            userName: string;
+            avatarUrl: string;
+            orderCount: number;
+            position: number;
+            timestamp: number;
+        }>;
+        buyerPositionDistribution: Array<{
+            userId: string;
+            userName: string;
+            positions: Array<{
+                position: number;
+                count: number;
+            }>;
+            totalOrders: number;
+        }>;
+        topSellers: Array<{
+            userId: string;
+            userName: string;
+            userNickName?: string;
+            avatarUrl: string;
+            listingCount: number;
+            timestamp: number;
+        }>;
+        topBuyers_transactions: any[];
+        topSellers_transactions: any[];
+        activePairs: any[];
+    };
+    statistics: {
+        totalBuyOrders: number;
+        totalSellListings: number;
+        totalTransactions: number;
+        activeBuyers: number;
+        activeSellers: number;
+        avgPrice: number;
+        maxPrice: number;
+        minPrice: number;
+        priceChange24h: number;
+    };
+}
+
+export async function getProjectAnalysis(projectId: number, timeRange: number = 24): Promise<ProjectAnalysisResponse> {
+    return request<ProjectAnalysisResponse>(`/api/projects/${projectId}/analysis?timeRange=${timeRange}`);
+}
+
+// User Profile
+export interface UserProfileData {
+    id: number;
+    username: string;
+    user_nickname?: string;
+    email?: string;
+    role: string;
+    member_type?: string;
+    member_level?: string;
+    avatar_url?: string;
+    team_id?: number;
+    team_name?: string;
+    invited_by_user_id?: number;
+    invited_by_username?: string;
+    project_quota: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export async function getUserProfile(): Promise<UserProfileData> {
+    const response = await request<{ profile: UserProfileData }>(`/api/user/profile`);
+    return response.profile;
+}
+
+export async function updateUserProfile(data: {
+    user_nickname?: string;
+    email?: string;
+    avatar_url?: string;
+}): Promise<{ message: string; profile: UserProfileData }> {
+    return request<{ message: string; profile: UserProfileData }>(`/api/user/profile`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+    });
+}
+
+export async function updatePassword(oldPassword: string, newPassword: string): Promise<{ message: string }> {
+    return request<{ message: string }>(`/api/user/password`, {
+        method: "PUT",
+        body: JSON.stringify({
+            old_password: oldPassword,
+            new_password: newPassword,
+        }),
+    });
+}
+
+// Team Management
+export interface TeamInfo {
+    id: number;
+    name: string;
+    owner_id: number;
+    owner_name?: string;
+    description?: string;
+    avatar_url?: string;
+    member_count?: number;
+    created_at: string;
+    updated_at?: string;
+}
+
+export interface InviteCodeInfo {
+    id: number;
+    code: string;
+    team_id: number;
+    uses_allowed: number;
+    uses_remaining: number;
+    created_by_admin_id: number;
+    created_by_admin_name?: string;
+    created_at: string;
+    expires_at?: string;
+}
+
+export async function getTeamInfo(): Promise<{ team: TeamInfo }> {
+    return request<{ team: TeamInfo }>(`/api/team/info`);
+}
+
+export async function updateTeamInfo(data: {
+    name?: string;
+    description?: string;
+    avatar_url?: string;
+}): Promise<{ message: string; team: TeamInfo }> {
+    return request<{ message: string; team: TeamInfo }>(`/api/team/info`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+    });
+}
+
+export async function generateInviteCode(data: {
+    uses_allowed?: number;
+    expires_in_days?: number;
+}): Promise<{ message: string; invite_code: InviteCodeInfo }> {
+    return request<{ message: string; invite_code: InviteCodeInfo }>(`/api/team/invite-code`, {
+        method: "POST",
+        body: JSON.stringify(data),
+    });
+}
+
+export async function getInviteCodes(): Promise<{ invite_codes: InviteCodeInfo[] }> {
+    return request<{ invite_codes: InviteCodeInfo[] }>(`/api/team/invite-codes`);
+}
+
 const apiClient = {
     setAuthToken,
     login,
@@ -153,6 +316,14 @@ const apiClient = {
     createProject,
     updateProject,
     deleteProject,
+    getProjectAnalysis,
+    getUserProfile,
+    updateUserProfile,
+    updatePassword,
+    getTeamInfo,
+    updateTeamInfo,
+    generateInviteCode,
+    getInviteCodes,
 };
 
 export default apiClient;

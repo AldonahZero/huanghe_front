@@ -26,11 +26,27 @@ export default function SellListingsSection({
               </div>
               <img
                 src={seller.avatarUrl || "/logo.ico"}
-                alt={seller.userName}
+                alt={seller.userNickName || seller.userName}
                 className="w-10 h-10 rounded-full"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/logo.ico";
+                }}
               />
               <div className="flex-1 min-w-0">
-                <div className="font-medium truncate">{seller.userName}</div>
+                {seller.userNickName && (
+                  <div className="font-medium truncate text-gray-800">
+                    {seller.userNickName}
+                  </div>
+                )}
+                <div
+                  className={`text-sm truncate ${
+                    seller.userNickName
+                      ? "text-gray-600"
+                      : "font-medium text-gray-800"
+                  }`}
+                >
+                  {seller.userName}
+                </div>
                 <div className="text-xs text-gray-500 truncate">
                   ID: {seller.userId}
                 </div>

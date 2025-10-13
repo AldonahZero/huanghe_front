@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import ProfileCard from "./ProfileCard";
+import { useAuth } from "@/contexts/AuthContext";
 import { Canvas, extend, useFrame } from "@react-three/fiber";
 import {
   useGLTF,
@@ -42,7 +43,20 @@ export default function LanyardClient({
   fov = 20,
   transparent = true,
 }: LanyardProps) {
+  const { user } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
+
+  // 格式化会员等级显示
+  const getMemberLevelText = (level?: string) => {
+    if (!level) return "普通会员";
+    const levelMap: Record<string, string> = {
+      emperor: "帝王会员",
+      private_director: "私董会员",
+      core: "核心会员",
+      normal: "普通会员",
+    };
+    return levelMap[level] || level;
+  };
 
   useEffect(() => {
     const handler = () => setShowProfile(true);
@@ -172,20 +186,25 @@ export default function LanyardClient({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="p-4">
             <ProfileCard
-              name="Huang he"
-              title="黄河会"
-              handle="Huang he"
-              status="黄河会"
-              contactText="Contact Me"
-              avatarUrl="/logo.ico"
+              name={user?.user_nickname || user?.username || "用户"}
+              title={user?.team_name || "黄河会"}
+              handle={user?.user_nickname || user?.username || "用户"}
+              status={getMemberLevelText(user?.member_level)}
+              contactText="查看个人信息"
+              avatarUrl={user?.avatar_url || "/logo.ico"}
               showUserInfo={true}
               enableTilt={true}
               enableMobileTilt={false}
-              onContactClick={() => console.log("Contact clicked")}
+              onContactClick={() => {
+                // 跳转到个人信息页面
+                if (typeof window !== "undefined") {
+                  window.location.href = "/dashboard/account";
+                }
+              }}
             />
             <div className="mt-4 text-right">
               <button
-                className="px-3 py-1 rounded bg-gray-200"
+                className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 transition-colors"
                 onClick={() => setShowProfile(false)}
               >
                 关闭
