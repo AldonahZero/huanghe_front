@@ -33,23 +33,27 @@ export default function SellListingsSection({
                 }}
               />
               <div className="flex-1 min-w-0">
-                {seller.userNickName && (
+                {/* 店铺名称 */}
+                {seller.storeName && (
                   <div className="font-medium truncate text-gray-800">
-                    {seller.userNickName}
+                    🏪 {seller.storeName}
                   </div>
                 )}
+                {/* 用户名称 */}
                 <div
                   className={`text-sm truncate ${
-                    seller.userNickName
+                    seller.storeName
                       ? "text-gray-600"
                       : "font-medium text-gray-800"
                   }`}
                 >
-                  {seller.userName}
+                  👤 {seller.userName}
                 </div>
+                {/* 用户ID */}
                 <div className="text-xs text-gray-500 truncate">
                   ID: {seller.userId}
                 </div>
+                {/* 挂售次数 */}
                 <div className="text-sm text-green-600 font-semibold">
                   挂售: {seller.listingCount}次
                 </div>

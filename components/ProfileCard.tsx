@@ -343,7 +343,7 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
                 <div className="pc-user-details">
                   <div className="pc-mini-avatar">
                     <img
-                      src={miniAvatarUrl || avatarUrl}
+                      src={miniAvatarUrl || "/logo.ico"}
                       alt={`${name || "User"} mini avatar`}
                       loading="lazy"
                       onError={(e) => {

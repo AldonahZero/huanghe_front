@@ -144,7 +144,13 @@ export async function getProject(projectId: number): Promise<TProject> {
     return request<TProject>(`/api/projects/${projectId}`);
 }
 
-export async function createProject(payload: { name: string; template_id: number; member_level_required?: string }): Promise<{ project?: TProject }> {
+export async function createProject(payload: {
+    name: string;
+    template_id: number;
+    member_level_required?: string;
+    is_active?: boolean;
+    monitor_frequency?: number;
+}): Promise<{ project?: TProject }> {
     return request(`/api/projects`, {
         method: "POST",
         body: JSON.stringify(payload),
@@ -162,6 +168,19 @@ export async function deleteProject(projectId: number): Promise<{ deleted: boole
     return request<{ deleted: boolean }>(`/api/projects/${projectId}`, {
         method: "DELETE",
     });
+}
+
+export async function updateProjectStatus(
+    projectId: number,
+    action: "activate" | "deactivate"
+): Promise<{ project: { id: number; is_active: boolean } }> {
+    return request<{ project: { id: number; is_active: boolean } }>(
+        `/api/projects/${projectId}/status`,
+        {
+            method: "PUT",
+            body: JSON.stringify({ action }),
+        }
+    );
 }
 
 // Project Analysis
@@ -202,6 +221,7 @@ export interface ProjectAnalysisResponse {
         topSellers: Array<{
             userId: string;
             userName: string;
+            storeName?: string;
             userNickName?: string;
             avatarUrl: string;
             listingCount: number;
@@ -279,6 +299,7 @@ export interface TeamInfo {
     name: string;
     owner_id: number;
     owner_name?: string;
+    owner_nickname?: string | null;
     description?: string;
     avatar_url?: string;
     member_count?: number;
@@ -354,6 +375,11 @@ export async function getTeamInfo(teamId?: number): Promise<{ team: TeamInfo; me
     return request<{ team: TeamInfo }>(`/api/team/info`);
 }
 
+// 通过用户 ID 获取该用户所属的团队信息（包含成员和邀请码）
+export async function getTeamByUserId(userId: number): Promise<{ team: TeamInfo; members: TeamMember[]; invites: TeamInvite[] }> {
+    return request<{ team: TeamInfo; members: TeamMember[]; invites: TeamInvite[] }>(`/api/team/user/${userId}`);
+}
+
 export async function updateTeamInfo(teamId: number, data: {
     name?: string;
     description?: string;
@@ -403,12 +429,14 @@ const apiClient = {
     createProject,
     updateProject,
     deleteProject,
+    updateProjectStatus,
     getProjectAnalysis,
     getUserProfile,
     updateUserProfile,
     updatePassword,
     getTeams,
     getTeamInfo,
+    getTeamByUserId,
     updateTeamInfo,
     generateInviteCode,
     getInviteCodes,

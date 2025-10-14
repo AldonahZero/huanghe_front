@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import ProfileCard from "./ProfileCard";
 import { useAuth } from "@/contexts/AuthContext";
+import * as api from "@/lib/api";
 import { Canvas, extend, useFrame } from "@react-three/fiber";
 import {
   useGLTF,
@@ -45,6 +46,8 @@ export default function LanyardClient({
 }: LanyardProps) {
   const { user } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
+  const [teamInfo, setTeamInfo] = useState<api.TeamInfo | null>(null);
+  const [loadingTeam, setLoadingTeam] = useState(false);
 
   // 格式化会员等级显示
   const getMemberLevelText = (level?: string) => {
@@ -57,6 +60,25 @@ export default function LanyardClient({
     };
     return levelMap[level] || level;
   };
+
+  // 根据用户 ID 获取团队信息
+  useEffect(() => {
+    const loadTeamInfo = async () => {
+      if (!user?.id) return;
+
+      setLoadingTeam(true);
+      try {
+        const response = await api.getTeamByUserId(user.id);
+        setTeamInfo(response.team);
+      } catch (error) {
+        console.error("加载团队信息失败:", error);
+      } finally {
+        setLoadingTeam(false);
+      }
+    };
+
+    loadTeamInfo();
+  }, [user?.id]);
 
   useEffect(() => {
     const handler = () => setShowProfile(true);
@@ -187,11 +209,14 @@ export default function LanyardClient({
           <div className="p-4">
             <ProfileCard
               name={user?.user_nickname || user?.username || "用户"}
-              title={user?.team_name || "黄河会"}
+              title={teamInfo?.name || user?.team_name || "黄河会"}
               handle={user?.user_nickname || user?.username || "用户"}
               status={getMemberLevelText(user?.member_level)}
               contactText="查看个人信息"
-              avatarUrl={user?.avatar_url || "/logo.ico"}
+              avatarUrl={
+                teamInfo?.avatar_url || user?.avatar_url || "/logo.ico"
+              }
+              miniAvatarUrl={user?.avatar_url}
               showUserInfo={true}
               enableTilt={true}
               enableMobileTilt={false}

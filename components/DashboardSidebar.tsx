@@ -14,8 +14,8 @@ export default function DashboardSidebar() {
       link: "/dashboard",
     },
     {
-      label: "团队信息",
-      ariaLabel: "查看 团队信息",
+      label: "全息令牌",
+      ariaLabel: "查看 全息令牌",
       link: "/dashboard/profile",
     },
     {

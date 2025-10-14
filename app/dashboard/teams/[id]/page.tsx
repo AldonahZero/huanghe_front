@@ -56,9 +56,12 @@ export default function TeamDetailPage() {
   const [showInviteForm, setShowInviteForm] = useState(false);
   // 团队成员（来自 getTeamInfo）
   const [teamMembers, setTeamMembers] = useState<api.TeamMember[]>([]);
-  // 编辑成员等级状态
-  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
-  const [editingMemberLevel, setEditingMemberLevel] =
+  // 弹窗编辑成员等级状态
+  const [showMemberModal, setShowMemberModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<api.TeamMember | null>(
+    null
+  );
+  const [selectedMemberLevel, setSelectedMemberLevel] =
     useState<string>("normal");
   const [updatingMember, setUpdatingMember] = useState(false);
   // 团队详情返回的 invites（优先使用）；若后端未返回则使用 inviteCodes
@@ -345,15 +348,14 @@ export default function TeamDetailPage() {
           </Alert>
         )}
 
-        {/* 团队信息卡片 */}
+        {/* 团队身份牌 */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>团队信息</CardTitle>
-            <CardDescription>管理团队的基本信息和头像</CardDescription>
+            <CardTitle>团队身份牌</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* 团队头像 */}
-            <div className="flex items-start gap-6 pb-6 border-b">
+            {/* 团队身份牌展示区 */}
+            <div className="relative bg-gradient-to-br from-purple-100 via-blue-100 to-pink-100 rounded-2xl p-8 shadow-lg">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -363,76 +365,113 @@ export default function TeamDetailPage() {
                 disabled={!isEditing}
               />
 
-              <div className="relative group">
-                <Avatar
-                  className={`h-24 w-24 ${
-                    isEditing
-                      ? "cursor-pointer ring-2 ring-offset-2 ring-transparent hover:ring-indigo-500 transition-all"
-                      : ""
-                  }`}
-                  onClick={handleAvatarClick}
-                >
-                  <AvatarImage
-                    src={avatarPreview || formData.avatar_url || "/logo.ico"}
-                    alt={formData.name}
-                  />
-                  <AvatarFallback className="text-2xl">
-                    {formData.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-
-                {isEditing && (
-                  <div
-                    className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-40 rounded-full transition-all cursor-pointer"
+              {/* 团队头像（大） */}
+              <div className="flex items-center gap-6 mb-6">
+                <div className="relative group">
+                  <Avatar
+                    className={`h-32 w-32 border-4 border-white shadow-xl ${
+                      isEditing
+                        ? "cursor-pointer ring-2 ring-offset-2 ring-transparent hover:ring-indigo-500 transition-all"
+                        : ""
+                    }`}
                     onClick={handleAvatarClick}
                   >
-                    <Upload className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                )}
+                    <AvatarImage
+                      src={avatarPreview || formData.avatar_url || "/logo.ico"}
+                      alt={formData.name}
+                    />
+                    <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-purple-400 to-pink-400 text-white">
+                      {formData.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
 
-                {avatarPreview && isEditing && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveAvatar();
-                    }}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors shadow-lg"
-                    type="button"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+                  {isEditing && (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-40 rounded-full transition-all cursor-pointer"
+                      onClick={handleAvatarClick}
+                    >
+                      <Upload className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  )}
 
-              <div className="flex-1">
-                <div className="text-sm font-medium text-gray-900 mb-2">
-                  团队头像
-                </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  点击头像或下方按钮上传新头像
-                </p>
-                <Button
-                  type="button"
-                  onClick={handleAvatarClick}
-                  disabled={!isEditing}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  {avatarPreview ? "更换头像" : "上传头像"}
-                </Button>
-                <div className="mt-2 text-xs text-gray-500 space-y-1">
-                  <p>• 支持 JPG、PNG、GIF、WebP 格式</p>
-                  <p>• 文件大小不超过 5MB</p>
+                  {avatarPreview && isEditing && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveAvatar();
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-colors shadow-lg z-10"
+                      type="button"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
 
-                {avatarPreview && (
-                  <div className="mt-3 flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded">
-                    <Check className="w-4 h-4" />
-                    新头像已选择，保存后生效
+                <div className="flex-1">
+                  <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                    {formData.name || "未命名团队"}
+                  </h2>
+                  <p className="text-gray-600 text-sm mb-3">
+                    {formData.description || "暂无描述"}
+                  </p>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="px-3 py-1 bg-white/80 rounded-full text-gray-700 font-medium">
+                      👥 {teamInfo?.member_count || 0} 成员
+                    </span>
+                    <span className="px-3 py-1 bg-white/80 rounded-full text-gray-700 font-medium">
+                      📅{" "}
+                      {teamInfo?.created_at
+                        ? new Date(teamInfo.created_at).toLocaleDateString(
+                            "zh-CN"
+                          )
+                        : "未知"}
+                    </span>
                   </div>
-                )}
+                </div>
+
+                {/* 用户头像（小） */}
+                <div className="flex flex-col items-center gap-2">
+                  <Avatar className="h-16 w-16 border-2 border-white shadow-md">
+                    <AvatarImage src={user?.avatar_url} alt={user?.username} />
+                    <AvatarFallback className="bg-gradient-to-br from-blue-400 to-cyan-400 text-white font-semibold">
+                      {(user?.user_nickname || user?.username || "U")
+                        .charAt(0)
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs text-gray-600 font-medium">
+                    {user?.user_nickname || user?.username}
+                  </span>
+                </div>
               </div>
+
+              {/* 创建者信息 */}
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <span className="font-semibold">创建者:</span>
+                  <span>
+                    {teamInfo?.owner_nickname ||
+                      teamInfo?.owner_name ||
+                      `ID: ${teamInfo?.owner_id}`}
+                  </span>
+                </div>
+              </div>
+
+              {isEditing && (
+                <div className="mt-4 text-xs text-gray-500 bg-white/60 backdrop-blur-sm rounded-lg p-3">
+                  <p className="font-medium mb-1">💡 提示：</p>
+                  <p>• 点击大头像可以上传团队头像</p>
+                  <p>• 支持 JPG、PNG、GIF、WebP 格式，大小不超过 5MB</p>
+                </div>
+              )}
+
+              {avatarPreview && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-green-600 bg-green-50 px-4 py-2 rounded-lg">
+                  <Check className="w-4 h-4" />
+                  新头像已选择，保存后生效
+                </div>
+              )}
             </div>
 
             {/* 团队名称 */}
@@ -525,156 +564,58 @@ export default function TeamDetailPage() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>团队成员</CardTitle>
-            <CardDescription>团队成员列表</CardDescription>
+            <CardDescription>团队成员列表（点击可编辑等级）</CardDescription>
           </CardHeader>
           <CardContent>
             {teamMembers.length === 0 ? (
               <div className="text-center text-gray-500 py-6">暂无成员数据</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {teamMembers.map((m) => {
-                  const isEditable = hasPermission; // admin 或 teacher 可以编辑
-                  return (
-                    <div key={m.user_id} className="p-0">
-                      <div
-                        className={`flex items-center gap-3 p-3 border rounded-lg bg-white ${
-                          isEditable ? "cursor-pointer hover:shadow" : ""
-                        }`}
-                        onClick={() => {
-                          if (!isEditable) return;
-                          // 切换该成员到编辑模式，并初始化级别选择为当前级别
-                          setEditingMemberId((prev) =>
-                            prev === m.user_id ? null : m.user_id
-                          );
-                          setEditingMemberLevel(m.member_level || "normal");
-                        }}
-                      >
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback>
-                            {(m.user_nickname || m.username || "U")
-                              .charAt(0)
-                              .toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">
-                            {m.user_nickname || m.username}
-                          </div>
-                          <div className="text-xs text-gray-500 truncate">
-                            {m.role_in_team} • 加入于{" "}
-                            {new Date(m.joined_at).toLocaleDateString("zh-CN")}
-                          </div>
-                          {/* 显示 member_level 的中文友好名称 */}
-                          <div className="text-xs text-gray-500 mt-1">
-                            {
-                              (
-                                {
-                                  emperor: "最高级（emperor）",
-                                  private_director:
-                                    "私董 / 私人董事（private_director）",
-                                  core: "核心会员（core）",
-                                  normal: "普通会员（normal）",
-                                } as Record<string, string>
-                              )[m.member_level || "normal"]
-                            }
-                          </div>
-                        </div>
+                {teamMembers.map((m) => (
+                  <div
+                    key={m.user_id}
+                    className={`flex items-center gap-3 p-3 border rounded-lg bg-white ${
+                      hasPermission
+                        ? "cursor-pointer hover:shadow transition-shadow"
+                        : ""
+                    }`}
+                    onClick={() => {
+                      if (!hasPermission) return;
+                      setSelectedMember(m);
+                      setSelectedMemberLevel(m.member_level || "normal");
+                      setShowMemberModal(true);
+                    }}
+                  >
+                    <Avatar className="h-12 w-12">
+                      <AvatarFallback>
+                        {(m.user_nickname || m.username || "U")
+                          .charAt(0)
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">
+                        {m.user_nickname || m.username}
                       </div>
-
-                      {/* 编辑行：只对正在编辑的成员显示 */}
-                      {editingMemberId === m.user_id && (
-                        <div className="mt-2 p-3 bg-white border rounded-lg">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
-                            <div className="col-span-2">
-                              <Label htmlFor={`member_level_${m.user_id}`}>
-                                会员等级
-                              </Label>
-                              <Select
-                                id={`member_level_${m.user_id}`}
-                                value={editingMemberLevel}
-                                onChange={(e) =>
-                                  setEditingMemberLevel(e.target.value)
-                                }
-                              >
-                                <option value="emperor">
-                                  emperor（最高级别）
-                                </option>
-                                <option value="private_director">
-                                  private_director（私董 / 私人董事）
-                                </option>
-                                <option value="core">core（核心会员）</option>
-                                <option value="normal">
-                                  normal（普通会员）
-                                </option>
-                                <option value="">无（取消等级）</option>
-                              </Select>
-                            </div>
-                            <div className="flex gap-2 justify-end">
-                              <Button
-                                onClick={async (ev) => {
-                                  ev.stopPropagation();
-                                  if (editingMemberId !== m.user_id) return;
-                                  setUpdatingMember(true);
-                                  setMessage(null);
-                                  try {
-                                    const levelToSend =
-                                      editingMemberLevel === ""
-                                        ? null
-                                        : editingMemberLevel;
-                                    const res = await api.updateTeamMemberLevel(
-                                      teamId,
-                                      m.user_id,
-                                      levelToSend
-                                    );
-                                    // 更新本地 state
-                                    setTeamMembers((prev) =>
-                                      prev.map((pm) =>
-                                        pm.user_id === m.user_id
-                                          ? {
-                                              ...pm,
-                                              member_level:
-                                                res.member.member_level,
-                                            }
-                                          : pm
-                                      )
-                                    );
-                                    setMessage({
-                                      type: "success",
-                                      text: res.message || "更新成功",
-                                    });
-                                    // 退出编辑
-                                    setEditingMemberId(null);
-                                  } catch (error: any) {
-                                    setMessage({
-                                      type: "error",
-                                      text: error?.message || "更新失败",
-                                    });
-                                  } finally {
-                                    setUpdatingMember(false);
-                                  }
-                                }}
-                                size="sm"
-                                disabled={updatingMember}
-                              >
-                                保存
-                              </Button>
-                              <Button
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  setEditingMemberId(null);
-                                }}
-                                variant="outline"
-                                size="sm"
-                              >
-                                取消
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                      <div className="text-xs text-gray-500 truncate">
+                        {m.role_in_team} • 加入于{" "}
+                        {new Date(m.joined_at).toLocaleDateString("zh-CN")}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {
+                          (
+                            {
+                              emperor: "帝王",
+                              private_director: "私董",
+                              core: "核心",
+                              normal: "普通",
+                            } as Record<string, string>
+                          )[m.member_level || "normal"]
+                        }
+                      </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
@@ -900,6 +841,149 @@ export default function TeamDetailPage() {
           </Card>
         )}
       </div>
+
+      {/* 成员等级编辑弹窗 */}
+      {showMemberModal && selectedMember && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onClick={() => setShowMemberModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">编辑会员等级</h3>
+              <button
+                onClick={() => setShowMemberModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center mb-6">
+              <Avatar className="h-20 w-20 mb-3">
+                <AvatarFallback className="text-2xl">
+                  {(
+                    selectedMember.user_nickname ||
+                    selectedMember.username ||
+                    "U"
+                  )
+                    .charAt(0)
+                    .toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-center">
+                <div className="font-semibold text-lg">
+                  {selectedMember.user_nickname || selectedMember.username}
+                </div>
+                <div className="text-sm text-gray-500">
+                  @{selectedMember.username}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-gray-600">团队角色:</span>
+                <span className="font-medium">
+                  {selectedMember.role_in_team}
+                </span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-gray-600">加入时间:</span>
+                <span className="font-medium">
+                  {new Date(selectedMember.joined_at).toLocaleDateString(
+                    "zh-CN"
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-gray-600">当前等级:</span>
+                <span className="font-medium">
+                  {
+                    (
+                      {
+                        emperor: "帝王",
+                        private_director: "私董",
+                        core: "核心",
+                        normal: "普通",
+                      } as Record<string, string>
+                    )[selectedMember.member_level || "normal"]
+                  }
+                </span>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <Label htmlFor="memberLevelSelect" className="block mb-2">
+                选择新等级
+              </Label>
+              <Select
+                id="memberLevelSelect"
+                value={selectedMemberLevel}
+                onChange={(e) => setSelectedMemberLevel(e.target.value)}
+              >
+                <option value="emperor">帝王</option>
+                <option value="private_director">私董</option>
+                <option value="core">核心</option>
+                <option value="normal">普通</option>
+                <option value="">无（取消等级）</option>
+              </Select>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={async () => {
+                  setUpdatingMember(true);
+                  setMessage(null);
+                  try {
+                    const levelToSend =
+                      selectedMemberLevel === "" ? null : selectedMemberLevel;
+                    const res = await api.updateTeamMemberLevel(
+                      teamId,
+                      selectedMember.user_id,
+                      levelToSend
+                    );
+                    // 更新本地 state
+                    setTeamMembers((prev) =>
+                      prev.map((pm) =>
+                        pm.user_id === selectedMember.user_id
+                          ? { ...pm, member_level: res.member.member_level }
+                          : pm
+                      )
+                    );
+                    setMessage({
+                      type: "success",
+                      text: res.message || "更新成功",
+                    });
+                    setShowMemberModal(false);
+                  } catch (error: any) {
+                    setMessage({
+                      type: "error",
+                      text: error?.message || "更新失败",
+                    });
+                  } finally {
+                    setUpdatingMember(false);
+                  }
+                }}
+                className="flex-1"
+                disabled={updatingMember}
+              >
+                {updatingMember ? "保存中..." : "保存"}
+              </Button>
+              <Button
+                onClick={() => setShowMemberModal(false)}
+                variant="outline"
+                className="flex-1"
+              >
+                取消
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

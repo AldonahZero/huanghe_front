@@ -148,7 +148,9 @@ export default function TeamsListPage() {
                         {team.name}
                       </CardTitle>
                       <CardDescription className="text-sm">
-                        ID: {team.id}
+                        {team.owner_nickname ||
+                          team.owner_name ||
+                          `ID: ${team.owner_id}`}
                       </CardDescription>
                     </div>
                   </div>
@@ -170,7 +172,9 @@ export default function TeamsListPage() {
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="text-gray-500 text-xs mb-1">创建者</div>
                       <div className="font-semibold text-gray-900 truncate">
-                        {team.owner_name || `ID:${team.owner_id}`}
+                        {team.owner_nickname ||
+                          team.owner_name ||
+                          `ID: ${team.owner_id}`}
                       </div>
                     </div>
                   </div>
