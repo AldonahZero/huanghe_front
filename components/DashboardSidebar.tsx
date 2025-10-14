@@ -5,7 +5,7 @@ import StaggeredMenu from "./StaggeredMenu";
 
 export default function DashboardSidebar() {
   const { user } = useAuth();
-  
+
   // 基础菜单项
   const baseMenuItems = [
     {
@@ -25,23 +25,25 @@ export default function DashboardSidebar() {
     },
   ];
 
-  // 如果是管理员或教师,添加团队设置选项
+  // 如果是管理员或老师,添加团队管理选项
   const teamSettingItem = {
-    label: "团队设置",
-    ariaLabel: "管理 团队设置",
-    link: "/dashboard/team",
+    label: "团队管理",
+    ariaLabel: "管理 团队",
+    link: "/dashboard/teams",
   };
 
-  const settingsItem = { 
-    label: "设置", 
-    ariaLabel: "打开 设置", 
-    link: "/dashboard/settings" 
+  const settingsItem = {
+    label: "设置",
+    ariaLabel: "打开 设置",
+    link: "/dashboard/settings",
   };
 
   // 组合菜单项
   const menuItems = [
     ...baseMenuItems,
-    ...(user?.role === "admin" || user?.role === "teacher" ? [teamSettingItem] : []),
+    ...(user?.role === "admin" || user?.role === "teacher"
+      ? [teamSettingItem]
+      : []),
     settingsItem,
   ];
 

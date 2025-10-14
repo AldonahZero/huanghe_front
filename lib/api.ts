@@ -41,6 +41,31 @@ async function request<T = unknown>(path: string, init: RequestInit = {}): Promi
     }
 
     if (!res.ok) {
+        // 如果是未授权（JWT 过期或无效），在客户端清理本地 auth 并重定向到登录页
+        if (res.status === 401 && typeof window !== "undefined") {
+            try {
+                // 清理本地存储与客户端 token
+                localStorage.removeItem("hh_token");
+                localStorage.removeItem("hh_user");
+                localStorage.removeItem("hh_permissions");
+                setAuthToken(null);
+            } catch (e) {
+                // ignore
+            }
+
+            // 不在公开页面时，跳转到登录页并保留 next
+            const current = window.location.pathname + window.location.search;
+            const PUBLIC = ["/", "/login", "/register"];
+            const isPublic = PUBLIC.some((p) => current === p || current.startsWith(p + "/"));
+            if (!isPublic) {
+                try {
+                    window.location.replace(`/login?next=${encodeURIComponent(current)}`);
+                } catch (e) {
+                    // ignore
+                }
+            }
+        }
+
         const dataObj = data && typeof data === "object" && data !== null ? (data as Record<string, unknown>) : undefined;
         const message = (dataObj && (dataObj["message"] ?? dataObj["error"])) ?? res.statusText ?? "Request failed";
         const err: { message: string; status: number; payload?: unknown } = {
@@ -261,6 +286,44 @@ export interface TeamInfo {
     updated_at?: string;
 }
 
+// 列表接口中返回的老师条目
+export interface TeamTeacher {
+    id: number;
+    username: string;
+    user_nickname?: string | null;
+}
+
+// 列表接口可能包含的额外字段
+export interface TeamListItem extends TeamInfo {
+    owner_nickname?: string | null;
+    invite_quota?: number;
+    teachers?: TeamTeacher[];
+}
+
+// 团队成员（用于团队详情）
+export interface TeamMember {
+    user_id: number;
+    username: string;
+    user_nickname?: string | null;
+    role_in_team: string; // member/teacher/leader
+    joined_at: string;
+    inviter_user_id?: number | null;
+    // 可选：成员在团队/会员系统中的等级（如 core/private_director 等）
+    member_level?: string | null;
+}
+
+// 团队详情中的邀请 (与 invites 字段格式一致)
+export interface TeamInvite {
+    code: string;
+    uses_allowed: number;
+    uses_remaining: number;
+    expires_at?: string | null;
+    created_by_admin_id?: number | null;
+    assigned_to_user_id?: number | null;
+    is_active: boolean;
+    created_at: string;
+}
+
 export interface InviteCodeInfo {
     id: number;
     code: string;
@@ -271,35 +334,59 @@ export interface InviteCodeInfo {
     created_by_admin_name?: string;
     created_at: string;
     expires_at?: string;
+    // 新增: 此邀请码所授予的会员级别（可选）
+    member_level?: string;
 }
 
-export async function getTeamInfo(): Promise<{ team: TeamInfo }> {
+// 获取团队列表 (管理员看所有,教师看自己的)
+export async function getTeams(): Promise<{ teams: TeamListItem[] }> {
+    return request<{ teams: TeamListItem[] }>(`/api/teams`);
+}
+
+// 获取指定团队信息 (通过team_id)
+export async function getTeamInfo(teamId?: number): Promise<{ team: TeamInfo; members?: TeamMember[]; invites?: TeamInvite[] }> {
+    // 前端点击团队卡片时后端约定为 GET /api/teams/<team_id>
+    if (teamId) {
+        return request<{ team: TeamInfo; members?: TeamMember[]; invites?: TeamInvite[] }>(`/api/teams/${teamId}`);
+    }
+
+    // 如果未传 teamId，则保留获取当前用户团队信息的旧路径（兼容旧后端）
     return request<{ team: TeamInfo }>(`/api/team/info`);
 }
 
-export async function updateTeamInfo(data: {
+export async function updateTeamInfo(teamId: number, data: {
     name?: string;
     description?: string;
     avatar_url?: string;
 }): Promise<{ message: string; team: TeamInfo }> {
-    return request<{ message: string; team: TeamInfo }>(`/api/team/info`, {
+    return request<{ message: string; team: TeamInfo }>(`/api/team/${teamId}/info`, {
         method: "PUT",
         body: JSON.stringify(data),
     });
 }
 
-export async function generateInviteCode(data: {
+export async function generateInviteCode(teamId: number, data: {
     uses_allowed?: number;
     expires_in_days?: number;
+    // 可选: 生成的邀请码将授予的新成员的会员级别
+    member_level?: string;
 }): Promise<{ message: string; invite_code: InviteCodeInfo }> {
-    return request<{ message: string; invite_code: InviteCodeInfo }>(`/api/team/invite-code`, {
+    return request<{ message: string; invite_code: InviteCodeInfo }>(`/api/team/${teamId}/invite-code`, {
         method: "POST",
         body: JSON.stringify(data),
     });
 }
 
-export async function getInviteCodes(): Promise<{ invite_codes: InviteCodeInfo[] }> {
-    return request<{ invite_codes: InviteCodeInfo[] }>(`/api/team/invite-codes`);
+export async function getInviteCodes(teamId: number): Promise<{ invite_codes: InviteCodeInfo[] }> {
+    return request<{ invite_codes: InviteCodeInfo[] }>(`/api/team/${teamId}/invite-codes`);
+}
+
+// 更新团队成员的 member_level（管理员或团队老师可用）
+export async function updateTeamMemberLevel(teamId: number, memberUserId: number, member_level: string | null): Promise<{ message: string; member: { user_id: number; username: string; user_nickname?: string | null; member_level?: string | null } }> {
+    return request<{ message: string; member: { user_id: number; username: string; user_nickname?: string | null; member_level?: string | null } }>(`/api/team/${teamId}/members/${memberUserId}/member-level`, {
+        method: "PUT",
+        body: JSON.stringify({ member_level }),
+    });
 }
 
 const apiClient = {
@@ -320,10 +407,12 @@ const apiClient = {
     getUserProfile,
     updateUserProfile,
     updatePassword,
+    getTeams,
     getTeamInfo,
     updateTeamInfo,
     generateInviteCode,
     getInviteCodes,
+    updateTeamMemberLevel,
 };
 
 export default apiClient;

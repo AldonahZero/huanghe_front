@@ -1,13 +1,29 @@
-# 团队设置功能实现文档
+# 团队管理功能实现文档
 
 ## 概述
-团队设置功能允许管理员和教师管理团队信息、上传团队头像、生成和管理团队邀请码。
+团队管理功能采用两层架构:管理员和老师首先看到团队列表,点击具体团队后进入该团队的详细设置页面,可以管理团队信息、上传团队头像、生成和管理团队邀请码。
+
+## 架构设计
+
+### 两层结构
+1. **团队列表页** (`/dashboard/teams`)
+   - 管理员: 可以看到所有团队的卡片
+  - 老师: 只能看到自己的团队卡片
+   - 点击团队卡片进入该团队的详细设置页面
+
+2. **团队详情页** (`/dashboard/teams/[id]`)
+   - 显示和编辑指定团队的详细信息
+   - 管理团队头像
+   - 生成和管理该团队的邀请码
 
 ## 权限模型
 - **访问权限**: 仅限 `admin` 和 `teacher` 角色
-- **普通成员**: 无法访问团队设置页面
+- **权限差异**:
+  - 管理员: 在列表页可以看到所有团队,可以编辑任何团队
+  - 老师: 在列表页只能看到自己的团队,只能编辑自己的团队
+- **普通成员**: 无法访问团队管理页面
 - **权限检查位置**:
-  - 前端: `app/dashboard/team/page.tsx` 中使用 `useAuth()` 检查
+  - 前端: 两个页面都使用 `useAuth()` 检查用户角色
   - 侧边栏: `components/DashboardSidebar.tsx` 条件渲染菜单项
 
 ## 功能模块
@@ -59,9 +75,36 @@
 
 ### API 接口
 
-#### 获取团队信息
+#### 获取团队列表
 ```typescript
-GET /api/team/info
+GET /api/teams
+
+Response:
+{
+  "code": 0,
+  "teams": [
+    {
+      "id": 1,
+      "name": "团队名称",
+      "owner_id": 123,
+      "owner_name": "张三",
+      "description": "团队描述",
+      "avatar_url": "https://...",
+      "member_count": 15,
+      "created_at": "2024-01-01T00:00:00",
+      "updated_at": "2024-01-15T00:00:00"
+    }
+  ]
+}
+
+说明: 
+- 管理员: 返回所有团队
+- 老师: 只返回自己创建的团队
+```
+
+#### 获取指定团队信息
+```typescript
+GET /api/team/{teamId}/info
 
 Response:
 {
@@ -82,7 +125,7 @@ Response:
 
 #### 更新团队信息
 ```typescript
-PUT /api/team/info
+PUT /api/team/{teamId}/info
 
 Request Body:
 {
@@ -101,7 +144,7 @@ Response:
 
 #### 生成邀请码
 ```typescript
-POST /api/team/invite-code
+POST /api/team/{teamId}/invite-code
 
 Request Body:
 {
@@ -129,7 +172,7 @@ Response:
 
 #### 获取邀请码列表
 ```typescript
-GET /api/team/invite-codes
+GET /api/team/{teamId}/invite-codes
 
 Response:
 {
@@ -152,8 +195,31 @@ Response:
 
 ### 前端组件
 
-#### 主页面组件
-**文件**: `app/dashboard/team/page.tsx`
+#### 团队列表页面
+**文件**: `app/dashboard/teams/page.tsx`
+
+**功能**:
+- 展示团队卡片列表(管理员看所有,老师看自己的)
+- 显示团队基本信息(头像、名称、描述、成员数量等)
+- 点击卡片或"管理团队"按钮跳转到详情页
+
+**状态管理**:
+- `teams`: 团队列表
+- `loading`: 加载状态
+- `message`: 消息提示
+
+**核心功能**:
+- `loadTeams()`: 加载团队列表
+- `handleTeamClick(teamId)`: 跳转到团队详情页
+
+#### 团队详情页面
+**文件**: `app/dashboard/teams/[id]/page.tsx`
+
+**功能**:
+- 显示和编辑指定团队的详细信息
+- 管理团队头像(文件上传)
+- 生成和管理该团队的邀请码
+- 返回团队列表按钮
 
 **状态管理**:
 - `teamInfo`: 团队信息
@@ -165,7 +231,7 @@ Response:
 - `message`: 消息提示
 
 **核心功能函数**:
-- `loadTeamInfo()`: 加载团队信息
+- `loadTeamInfo()`: 加载指定团队信息
 - `loadInviteCodes()`: 加载邀请码列表
 - `handleAvatarFileChange()`: 处理头像文件选择
 - `handleSave()`: 保存团队信息
@@ -186,6 +252,8 @@ const menuItems = [
 ];
 ```
 
+**菜单链接**: `/dashboard/teams` (指向团队列表页)
+
 #### 顶栏标题
 **文件**: `components/DashboardTopbar.tsx`
 
@@ -193,9 +261,14 @@ const menuItems = [
 ```typescript
 const mapTitle: Record<string, string> = {
   // ...
-  "/dashboard/team": "团队设置",
+  "/dashboard/teams": "团队管理",
   // ...
 };
+
+// 动态路由处理
+if (pathname?.startsWith("/dashboard/teams/")) {
+  title = "团队设置";
+}
 ```
 
 ### UI 组件库
@@ -218,13 +291,21 @@ const mapTitle: Record<string, string> = {
 
 ### 交互流程
 
+#### 浏览团队列表
+1. 管理员或老师登录后,在侧边栏看到"团队管理"菜单项
+2. 点击进入团队列表页 (`/dashboard/teams`)
+3. 管理员看到所有团队卡片,老师只看到自己的团队卡片
+4. 卡片显示团队头像、名称、描述、成员数量等信息
+5. 点击卡片或"管理团队"按钮进入团队详情页
+
 #### 编辑团队信息
-1. 用户点击"编辑信息"按钮
+1. 在团队详情页点击"编辑信息"按钮
 2. 输入框变为可编辑状态
 3. 用户修改信息(可选上传头像)
 4. 点击"保存更改"
 5. 显示成功/失败消息
 6. 自动退出编辑模式
+7. 可点击"返回团队列表"按钮回到列表页
 
 #### 生成邀请码
 1. 用户点击"生成邀请码"按钮
@@ -288,15 +369,19 @@ const mapTitle: Record<string, string> = {
 ## 测试要点
 
 ### 功能测试
-- [ ] 管理员可以访问团队设置页面
-- [ ] 教师可以访问团队设置页面
-- [ ] 普通成员无法访问团队设置页面
-- [ ] 团队信息加载正常
+- [ ] 管理员可以访问团队列表页面
+ - [ ] 老师可以访问团队列表页面
+- [ ] 普通成员无法访问团队管理页面
+- [ ] 管理员在列表页可以看到所有团队
+ - [ ] 老师在列表页只能看到自己的团队
+- [ ] 点击团队卡片可以进入详情页
+- [ ] 团队详情页可以正确加载指定团队的信息
 - [ ] 团队信息编辑和保存功能正常
 - [ ] 头像上传(文件选择、预览、删除)正常
-- [ ] 邀请码生成功能正常
-- [ ] 邀请码列表加载正常
+- [ ] 邀请码生成功能正常(带teamId参数)
+- [ ] 邀请码列表加载正常(带teamId参数)
 - [ ] 邀请码复制功能正常
+- [ ] 返回团队列表功能正常
 - [ ] 刷新功能正常
 
 ### 边界测试
@@ -313,6 +398,168 @@ const mapTitle: Record<string, string> = {
 - [ ] 复制反馈动画正常
 - [ ] 响应式布局正常
 
+## 前端对 invites 字段的期望说明 (供后端对接)
+
+前端在团队详情页会优先使用 `GET /api/teams/<team_id>` 返回体中的 `invites` 字段（如果存在），否则回退到单独的 `GET /api/team/{teamId}/invite-codes`。为了保证前端功能完整，请后端确保 `invites` 或 `invite_codes` 中包含以下字段。
+
+示例（团队详情返回中 embeds invites）:
+
+```json
+{
+  "team": { /* ... */ },
+  "members": [ /* ... */ ],
+  "invites": [
+    {
+      "code": "ABC123",
+      "uses_allowed": 3,
+      "uses_remaining": 2,
+      "expires_at": null,
+      "created_by_admin_id": 1,
+      "assigned_to_user_id": null,
+      "is_active": true,
+      "created_at": "2025-10-13T10:31:00",
+      "member_level": "core"
+    }
+  ]
+}
+```
+
+字段说明（invites / invite_codes）：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| code | string | 邀请码文本 |
+| uses_allowed | integer | 允许的最大使用次数 |
+| uses_remaining | integer | 剩余可用次数 |
+| expires_at | string|null | 过期时间（ISO 8601 格式，或 null 表示不过期） |
+| created_by_admin_id | integer|null | 创建该邀请码的管理员 ID（可为 null） |
+| assigned_to_user_id | integer|null | 如果该邀请码被指定给某位用户使用，填写该用户 ID，否则为 null |
+| is_active | boolean | 当前邀请码是否仍然有效（true/false） |
+| created_at | string | 创建时间（ISO 8601 格式） |
+| member_level | string|null | 可选：此邀请码被使用后分配给新用户的会员级别（参见下方枚举），若无则为 null |
+
+关于 `member_level`（前端期望的取值与含义）：
+
+| 前端值 | 含义 (备注) |
+|--------|-----------|
+| emperor | emperor（最高级别） |
+| private_director | private_director（私董 / 私人董事类权限） |
+| core | core（核心会员） |
+| normal | normal（普通会员） |
+
+注意：前端不会自行映射这些值为本地名称（目前直接展示原始字符串或原样显示），如果后端希望前端显示更友好的中文名称，可以返回 `member_level_display` 字段，或者后端/前端达成一致的映射规则。
+
+兼容性说明：
+- 如果后端仍使用旧接口 `GET /api/team/{teamId}/invite-codes` 返回 `invite_codes` 数组，字段应与上表保持一致（字段名大小写也请保持一致，建议使用 snake_case）。
+- 如果后端使用不同字段名（例如 `level` 或 `assign_level`），请告知前端以便同步修改。
+
+---
+
+## 后端接口补充说明（管理员 & 老师相关）
+
+为了使前端可以在多个上下文中统一读取并展示 `member_level` 字段，后端请同时确认并支持以下接口：
+
+1) 管理员创建邀请码（管理员在后台/管理端创建）
+
+POST /api/admin/teams/<team_id>/invites
+
+Request Body 示例:
+
+```json
+{
+  "uses_allowed": 3,
+  "assigned_to_user_id": null,
+  "member_level": "core"
+}
+```
+
+Response 示例（成功）:
+
+```json
+{
+  "code": 0,
+  "message": "邀请码生成成功",
+  "invite": {
+    "id": 101,
+    "code": "ABC123",
+    "team_id": 12,
+    "uses_allowed": 3,
+    "uses_remaining": 3,
+    "created_by_admin_id": 1,
+    "assigned_to_user_id": null,
+    "is_active": true,
+    "created_at": "2025-10-14T08:00:00",
+    "expires_at": null,
+    "member_level": "core"
+  }
+}
+```
+
+说明:
+- `member_level` 为可选字段。如果请求中提供该字段且后端保存成功，则返回体中的 `invite.member_level` 应包含相同值。
+- 若后端无法保存该字段，应在响应中返回 `member_level: null` 或不包含该字段，并在 API 文档/错误码中明确说明。
+
+2) 团队详情（团队页面使用）
+
+GET /api/teams/<team_id>
+
+说明: 团队详情返回体中的 `invites` 数组（如果后端实现 embeds）应包含 `member_level` 字段（若数据库中存在）。前端会优先读取该字段来展示或决定新成员的初始等级。
+
+示例（部分）:
+
+```json
+{
+  "team": { /* ... */ },
+  "members": [ /* ... */ ],
+  "invites": [
+    {
+      "code": "ABC123",
+      "uses_allowed": 3,
+      "uses_remaining": 2,
+      "expires_at": null,
+      "created_by_admin_id": 1,
+      "assigned_to_user_id": null,
+      "is_active": true,
+      "created_at": "2025-10-13T10:31:00",
+      "member_level": "core"
+    }
+  ]
+}
+```
+
+3) 老师维度的邀请列表（用于个人邀请管理视图）
+
+GET /api/teachers/<teacher_id>/invites
+
+说明: 如果后端提供老师维度的邀请列表接口，请确保返回的 invite 项也包含 `member_level` 字段（若数据库中存在），以便前端在老师个人页面或历史记录中展示该信息。
+
+示例响应:
+
+```json
+{
+  "code": 0,
+  "invites": [
+    {
+      "id": 55,
+      "code": "XYZ789",
+      "team_id": 12,
+      "uses_allowed": 5,
+      "uses_remaining": 4,
+      "created_by_admin_id": null,
+      "assigned_to_user_id": null,
+      "is_active": true,
+      "created_at": "2025-10-10T09:00:00",
+      "expires_at": "2025-11-09T23:59:59",
+      "member_level": "private_director"
+    }
+  ]
+}
+```
+
+兼容性提醒:
+- 前端在展示时优先使用 `GET /api/teams/<team_id>` 返回体中的 `invites`；作为后备，前端仍可调用 `GET /api/team/{teamId}/invite-codes`（旧接口）或 `GET /api/team/{teamId}/invite-codes` 返回的 `invite_codes`。请确保所有这些接口在可能的情况下返回一致的 `member_level` 字段。
+- 字段命名建议使用 snake_case（例如 `member_level`），并保持各接口一致。
+
 ## 相关文档
 - [用户信息实现文档](./user-profile-implementation.md)
 - [头像上传实现文档](./avatar-upload-implementation.md)
@@ -320,12 +567,14 @@ const mapTitle: Record<string, string> = {
 
 ## 更新日志
 
-### 2024-01-XX
-- ✅ 创建团队设置页面
+### 2025-10-13 - 重构为两层架构
+ ✅ 实现权限差异(管理员看所有,老师看自己的)
+
+### 2024-01-XX - 初始版本
+- ✅ 创建团队设置页面(单页版)
 - ✅ 实现团队信息管理功能
 - ✅ 实现头像上传功能
 - ✅ 实现邀请码生成功能
 - ✅ 实现邀请码列表和复制功能
 - ✅ 添加侧边栏权限控制
-- ✅ 更新顶栏标题映射
 - ✅ 编写完整文档

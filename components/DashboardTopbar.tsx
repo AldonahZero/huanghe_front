@@ -14,17 +14,19 @@ export default function DashboardTopbar() {
     "/dashboard": "仪表盘",
     "/dashboard/profile": "团队信息",
     "/dashboard/account": "个人信息",
-    "/dashboard/team": "团队设置",
+    "/dashboard/teams": "团队管理",
     "/dashboard/listings": "监控列表",
     "/dashboard/settings": "系统设置",
   };
 
-  // 处理动态路由（如项目详情页）
+  // 处理动态路由（如项目详情页、团队详情页）
   let title = mapTitle[pathname || "/dashboard"];
 
   if (!title) {
     if (pathname?.startsWith("/dashboard/project/")) {
       title = "项目详情";
+    } else if (pathname?.startsWith("/dashboard/teams/")) {
+      title = "团队设置";
     } else {
       title = "仪表盘";
     }
@@ -72,7 +74,7 @@ export default function DashboardTopbar() {
               {user?.role === "admin"
                 ? "管理员"
                 : user?.role === "teacher"
-                ? "教师"
+                ? "老师"
                 : user?.role === "leader"
                 ? "团队长"
                 : "成员"}

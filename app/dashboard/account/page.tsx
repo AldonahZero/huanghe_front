@@ -508,7 +508,7 @@ export default function AccountPage() {
                 <Label>角色</Label>
                 <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded border">
                   {user.role === "admin" && "管理员"}
-                  {user.role === "teacher" && "教师"}
+                  {user.role === "teacher" && "老师"}
                   {user.role === "leader" && "团队长"}
                   {user.role === "member" && "成员"}
                 </div>
