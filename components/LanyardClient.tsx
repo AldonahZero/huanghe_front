@@ -395,6 +395,9 @@ function Band({
   const [dragged, drag] = useState<false | THREE.Vector3>(false);
   const [hovered, hover] = useState(false);
 
+  // 使用 ref 存储上次点击时间,用于双击检测
+  const lastTapTimeRef = useRef<number>(0);
+
   const [isSmall, setIsSmall] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       return window.innerWidth < 1024;
@@ -520,27 +523,26 @@ function Band({
             onPointerOver={() => hover(true)}
             onPointerOut={() => hover(false)}
             onPointerUp={(e: any) => {
-              // touch/double-tap detection for mobile: if two taps within 300ms, treat as double-click
-              try {
-                const pointerType =
-                  e.pointerType ||
-                  (e.nativeEvent && e.nativeEvent.pointerType) ||
-                  "";
-                if (pointerType === "touch" || e.type === "touchend") {
-                  const now = Date.now();
-                  const last = (e.currentTarget.__lastTap as number) || 0;
-                  if (now - last < 300) {
-                    try {
-                      window.dispatchEvent(
-                        new CustomEvent("lanyard:cardDouble")
-                      );
-                    } catch (err) {}
-                    e.currentTarget.__lastTap = 0;
-                  } else {
-                    e.currentTarget.__lastTap = now;
-                  }
+              // 双击/双触检测 - 适用于桌面和移动端
+              const now = Date.now();
+              const timeSinceLastTap = now - lastTapTimeRef.current;
+
+              // 如果两次点击间隔小于 300ms,视为双击
+              if (timeSinceLastTap > 0 && timeSinceLastTap < 300) {
+                // 触发双击事件
+                try {
+                  window.dispatchEvent(new CustomEvent("lanyard:cardDouble"));
+                } catch (err) {
+                  console.error("Failed to dispatch double tap event:", err);
                 }
-              } catch (err) {}
+                // 重置时间,防止三击被识别为双击
+                lastTapTimeRef.current = 0;
+              } else {
+                // 记录本次点击时间
+                lastTapTimeRef.current = now;
+              }
+
+              // 释放指针捕获并结束拖拽
               try {
                 e.target.releasePointerCapture(e.pointerId);
               } catch (err) {}

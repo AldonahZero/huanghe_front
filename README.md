@@ -16,8 +16,30 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 3. **环境变量说明**:
    - `NEXT_PUBLIC_API_URL`: 后端 API 基础 URL
-   - 开发环境默认: `http://localhost:5001`
-   - 生产环境: `http://115.190.102.236/api`
+     - 开发环境默认: `http://localhost:5001`
+     - 生产环境: `http://115.190.102.236/api`
+   - `NEXT_PUBLIC_DEV_MODE`: 开发模式开关
+     - `true`: 跳过登录验证,使用模拟用户
+     - `false`: 使用真实登录(生产环境必须为 false)
+
+### 🔧 开发模式 (推荐用于 UI 调试)
+
+启用开发模式可以跳过登录,直接访问所有页面:
+
+```bash
+# 在 .env.local 中添加
+NEXT_PUBLIC_DEV_MODE=true
+
+# 重启开发服务器
+pnpm dev
+```
+
+启用后:
+- ✅ 无需登录即可访问 Dashboard 等所有页面
+- ✅ 自动使用管理员权限的模拟用户
+- ✅ 加速 UI 开发和调试
+
+详细说明请查看 [开发模式使用指南](./DEV_MODE_GUIDE.md)
 
 ### 部署到生产环境
 

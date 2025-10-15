@@ -3,6 +3,7 @@
   width: 100%;
   height: 100%;
   z-index: 40;
+  pointer-events: none; /* 默认不响应点击事件 */
 }
 
 .staggered-menu-wrapper.fixed-wrapper {
@@ -13,6 +14,12 @@
   height: 100vh;
   z-index: 40;
   overflow: hidden;
+  pointer-events: none; /* 默认不响应点击事件 */
+}
+
+/* 菜单打开时,允许菜单面板区域响应点击 */
+.staggered-menu-wrapper[data-open] {
+  pointer-events: auto;
 }
 
 .staggered-menu-header {
@@ -184,6 +191,12 @@
   padding: 6em 2em 2em 2em;
   overflow-y: auto;
   z-index: 10;
+  pointer-events: none;
+}
+
+/* 菜单打开时恢复点击事件 */
+[data-open] .staggered-menu-panel {
+  pointer-events: auto;
 }
 
 [data-position='left'] .staggered-menu-panel {
@@ -199,6 +212,11 @@
   width: clamp(260px, 38vw, 420px);
   pointer-events: none;
   z-index: 5;
+}
+
+/* 确保预层始终不响应点击 */
+.sm-prelayer {
+  pointer-events: none;
 }
 
 [data-position='left'] .sm-prelayers {

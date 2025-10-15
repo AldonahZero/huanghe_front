@@ -45,8 +45,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // 开发模式检测
+  const isDevMode =
+    typeof window !== "undefined" &&
+    process.env.NEXT_PUBLIC_DEV_MODE === "true";
+
   useEffect(() => {
-    // load token from localStorage
+    // 开发模式:使用模拟用户,跳过登录验证
+    if (isDevMode) {
+      const mockUser: User = {
+        id: 1,
+        username: "dev_user",
+        user_nickname: "开发用户",
+        email: "dev@example.com",
+        role: "admin",
+        member_type: "individual",
+        member_level: "premium",
+        avatar_url: "",
+        project_quota: 999,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      const mockToken = "dev-mock-token-12345";
+
+      setToken(mockToken);
+      setUser(mockUser);
+      setPermissions(["admin"]);
+      api.setAuthToken(mockToken);
+
+      console.log("🔧 开发模式已启用 - 使用模拟用户登录");
+      setLoading(false);
+      return;
+    }
+
+    // 生产模式:从 localStorage 加载真实 token
     const t =
       typeof window !== "undefined" ? localStorage.getItem("hh_token") : null;
     const u =
@@ -74,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     setLoading(false);
-  }, []);
+  }, [isDevMode]);
 
   const login = async (values: { username: string; password: string }) => {
     const res = await api.login(values);
