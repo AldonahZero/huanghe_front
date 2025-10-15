@@ -1,5 +1,33 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## 环境配置
+
+### API 地址配置
+
+项目使用环境变量来配置后端 API 地址:
+
+1. **开发环境**: 复制 `.env.example` 为 `.env.local`
+   ```bash
+   cp .env.example .env.local
+   ```
+
+2. **生产环境**: 使用 `.env.production` (已配置)
+   - API 地址: `http://115.190.102.236/api`
+
+3. **环境变量说明**:
+   - `NEXT_PUBLIC_API_URL`: 后端 API 基础 URL
+   - 开发环境默认: `http://localhost:5001`
+   - 生产环境: `http://115.190.102.236/api`
+
+### 部署到生产环境
+
+构建生产版本时,Next.js 会自动使用 `.env.production` 中的配置:
+
+```bash
+pnpm build
+pnpm start
+```
+
 ## Getting Started
 
 First, run the development server:
