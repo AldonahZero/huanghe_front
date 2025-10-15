@@ -110,6 +110,56 @@ export async function getTemplates(): Promise<TTemplatesList> {
     return request<TTemplatesList>(`/api/templates`);
 }
 
+// Search templates by name (假设后端提供此接口)
+export async function searchTemplates(query: string): Promise<{
+    templates: Array<{
+        id?: number;
+        name: string;
+        market_hash_name?: string;
+        icon_url?: string;
+        weapon?: string;
+        exterior?: string;
+    }>;
+}> {
+    // 调用后端代理的外部 autocomplete：/api/items/search
+    // 规范（见 Swagger）返回 { data: [ { market_name, market_hash_name, icon_url, ... } ] }
+    try {
+        const limit = 20;
+        const resp = await request<{ data?: Array<{ market_name?: string; market_hash_name?: string; icon_url?: string; template_id?: number }> }>(`/api/items/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+        const items = resp?.data || [];
+
+        const templates = items.map((it) => ({
+            id: typeof it.template_id === "number" ? it.template_id : undefined,
+            name: it.market_name || it.market_hash_name || "",
+            market_hash_name: it.market_hash_name,
+            icon_url: it.icon_url,
+            weapon: undefined,
+            exterior: undefined,
+        }));
+
+        return { templates };
+    } catch (err) {
+        console.warn("searchTemplates failed:", err);
+        return { templates: [] };
+    }
+}
+
+// 获取单个模板的完整详情
+export async function getTemplate(templateId: number): Promise<{
+    id: number;
+    name: string;
+    market_hash_name?: string;
+    icon_url?: string;
+    weapon?: string;
+    exterior?: string;
+    quality?: string;
+    rarity?: string;
+    // 后端可能返回更多字段，这里用索引签名以便前端兼容
+    [key: string]: any;
+}> {
+    return request(`/api/latest/${templateId}`);
+}
+
 // Latest crawl data
 export async function getLatest(templateId: number, data_type?: string): Promise<Record<string, any>> {
     const qs = data_type ? `?data_type=${encodeURIComponent(data_type)}` : "";
@@ -146,7 +196,8 @@ export async function getProject(projectId: number): Promise<TProject> {
 
 export async function createProject(payload: {
     name: string;
-    template_id: number;
+    template_id?: number | null;
+    template_info?: any;
     member_level_required?: string;
     is_active?: boolean;
     monitor_frequency?: number;
@@ -191,6 +242,7 @@ export interface ProjectAnalysisResponse {
         template_id: number;
         is_active: boolean;
         created_at: string | null;
+        crawl_interval?: number; // 数据抓取间隔(分钟)
         item: {
             market_name: string;
             weapon: string;
@@ -420,6 +472,7 @@ const apiClient = {
     login,
     register,
     getTemplates,
+    searchTemplates,
     getLatest,
     getAnalysis,
     getAnalysisTypes,

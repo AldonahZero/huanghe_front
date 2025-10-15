@@ -450,10 +450,21 @@
   transition: grid-template-columns 240ms ease;
 }
 
+.dashboard-grid > aside {
+  overflow: hidden;
+  pointer-events: none;
+}
+
 body.sidebar-open .dashboard-grid {
   grid-template-columns: 320px 1fr;
 }
 
+body.sidebar-open .dashboard-grid > aside {
+  pointer-events: auto;
+}
+
 .dashboard-content {
   width: 100%;
+  position: relative;
+  z-index: 1;
 }

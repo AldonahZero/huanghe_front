@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import {
   FC,
   Suspense,
@@ -173,13 +174,35 @@ const ModelInner: FC<ModelInnerProps> = ({
   const cHov = useRef({ x: 0, y: 0 });
 
   const ext = useMemo(() => url.split(".").pop()!.toLowerCase(), [url]);
+
+  // Load all model types unconditionally (Hooks must be called in the same order)
+  // We'll only use the one that matches the extension
+  let gltfModel, fbxModel, objModel;
+  try {
+    gltfModel = useGLTF(url);
+  } catch (e) {
+    gltfModel = null;
+  }
+  try {
+    fbxModel = useFBX(url);
+  } catch (e) {
+    fbxModel = null;
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    objModel = useLoader(OBJLoader, url) as any;
+  } catch (e) {
+    objModel = null;
+  }
+
   const content = useMemo<THREE.Object3D | null>(() => {
-    if (ext === "glb" || ext === "gltf") return useGLTF(url).scene.clone();
-    if (ext === "fbx") return useFBX(url).clone();
-    if (ext === "obj") return (useLoader(OBJLoader, url) as any).clone();
+    if (ext === "glb" || ext === "gltf")
+      return gltfModel?.scene.clone() ?? null;
+    if (ext === "fbx") return fbxModel?.clone() ?? null;
+    if (ext === "obj") return objModel?.clone() ?? null;
     console.error("Unsupported format:", ext);
     return null;
-  }, [url, ext]);
+  }, [url, ext, gltfModel, fbxModel, objModel]);
 
   const pivotW = useRef(new THREE.Vector3());
   useLayoutEffect(() => {

@@ -37,6 +37,7 @@ export type Project = {
     is_active?: boolean;
     member_level_required?: string;
     created_at?: string;
+    crawl_interval?: number; // 数据抓取间隔(分钟)
 };
 
 export type AnalysisResult = {

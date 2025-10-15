@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import * as api from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
 import { X } from "lucide-react";
+import ItemSearchInput from "@/components/ItemSearchInput";
 
 interface CreateProjectModalProps {
   onClose: () => void;
@@ -27,9 +28,18 @@ export default function CreateProjectModal({
 
   const [formData, setFormData] = useState({
     name: "",
+    template_id: null as number | null, // 选中的模板ID
     monitor_frequency: 60, // 默认60分钟
     member_level_required: [] as string[], // 可见等级（多选）
   });
+  // 保存完整的选中候选（可能没有内部 template_id）
+  const [selectedTemplate, setSelectedTemplate] = useState<{
+    id?: number;
+    name?: string;
+    market_hash_name?: string;
+    icon_url?: string;
+    [k: string]: any;
+  } | null>(null);
 
   // 会员等级选项
   const memberLevels = [
@@ -50,16 +60,31 @@ export default function CreateProjectModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 允许提交：如果没有 template_id，会把选中候选的基础信息发送给后端（后端负责映射/创建）
+    if (!formData.template_id && !selectedTemplate) {
+      setMessage({
+        type: "error",
+        text: "请从搜索结果中选择一个饰品",
+      });
+      return;
+    }
+
     setLoading(true);
     setMessage(null);
 
     try {
       // 准备提交数据
-      // 注意：template_id 需要根据饰品名称查询或创建，这里暂时使用 1 作为默认值
-      // 实际应用中应该先搜索饰品，然后使用对应的 template_id
-      const payload = {
+      const payload: {
+        name: string;
+        template_id?: number | null;
+        template_info?: any;
+        member_level_required?: string;
+        is_active?: boolean;
+        monitor_frequency?: number;
+      } = {
         name: formData.name,
-        template_id: 1, // TODO: 根据饰品名称获取或创建 template
+        template_id: formData.template_id,
         member_level_required:
           formData.member_level_required.length > 0
             ? formData.member_level_required.join(",")
@@ -68,8 +93,19 @@ export default function CreateProjectModal({
         monitor_frequency: formData.monitor_frequency,
       };
 
+      // 如果没有 template_id，但用户选中了一个候选（外部 autocomplete），将把该候选信息带给后端，后端可尝试映射或创建模板
+      if (!formData.template_id && selectedTemplate) {
+        payload.template_info = {
+          name: selectedTemplate.name || selectedTemplate.market_hash_name,
+          market_hash_name: selectedTemplate.market_hash_name,
+          icon_url: selectedTemplate.icon_url,
+          // 其余字段全部传输，便于后端决策
+          ...selectedTemplate,
+        };
+      }
+
       // 使用 API 客户端创建项目
-      const result = await api.createProject(payload);
+      await api.createProject(payload);
 
       setMessage({
         type: "success",
@@ -124,38 +160,68 @@ export default function CreateProjectModal({
           {/* 饰品名称 */}
           <div>
             <Label htmlFor="projectName">饰品名称</Label>
-            <Input
-              id="projectName"
-              type="text"
+            <ItemSearchInput
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              placeholder="输入饰品名称"
-              required
-            />
-          </div>
-
-          {/* 监控频率 */}
-          <div>
-            <Label htmlFor="frequency">监控频率（分钟）</Label>
-            <Input
-              id="frequency"
-              type="number"
-              min="1"
-              value={formData.monitor_frequency}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  monitor_frequency: parseInt(e.target.value) || 60,
-                })
-              }
-              placeholder="60"
+              onChange={(value) => setFormData({ ...formData, name: value })}
+              onSelectTemplate={(template) => {
+                const displayName =
+                  template.name || template.market_hash_name || `选择的饰品`;
+                // 保存完整候选
+                setSelectedTemplate(template || null);
+                // 始终填充显示名称
+                setFormData((prev) => ({ ...prev, name: displayName }));
+                // 如果后端已映射出内部 id，则同时存储 id 以便直接提交
+                if (template.id && template.id > 0) {
+                  setFormData((prev) => ({
+                    ...prev,
+                    template_id: template.id ?? null,
+                  }));
+                } else {
+                  // 清除 template_id 以表示当前未映射
+                  setFormData((prev) => ({ ...prev, template_id: null }));
+                }
+                // 清除之前的错误提示
+                setMessage(null);
+              }}
+              placeholder="输入饰品名称搜索..."
               required
             />
             <p className="text-xs text-gray-500 mt-1">
-              每隔多少分钟检查一次价格
+              输入至少2个字符开始搜索,选择饰品后会自动填充
             </p>
+            {selectedTemplate && selectedTemplate.id ? (
+              <p className="text-xs text-green-600 mt-1">
+                ✓ 已选择模板 ID: {selectedTemplate.id}
+              </p>
+            ) : selectedTemplate ? (
+              <p className="text-xs text-yellow-600 mt-1">
+                ✓ 已选择:{" "}
+                {selectedTemplate.name || selectedTemplate.market_hash_name}
+              </p>
+            ) : null}
+          </div>
+          {/* 监控频率：选项卡 5 / 15 / 30 / 60 */}
+          <div>
+            <Label>监控频率（分钟）</Label>
+            <div className="mt-2 flex gap-2">
+              {[5, 15, 30, 60].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, monitor_frequency: m }))
+                  }
+                  className={`px-3 py-2 rounded-lg border text-sm font-medium ${
+                    formData.monitor_frequency === m
+                      ? "bg-indigo-600 text-white border-indigo-600"
+                      : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">选择检查频率</p>
           </div>
 
           {/* 会员可见等级（多选） */}

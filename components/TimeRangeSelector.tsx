@@ -6,12 +6,12 @@ interface TimeRangeSelectorProps {
 }
 
 const timeRangeOptions = [
-  { label: "最近1小时", value: 1 },
-  { label: "最近6小时", value: 6 },
-  { label: "最近12小时", value: 12 },
-  { label: "最近24小时", value: 24 },
-  { label: "最近48小时", value: 48 },
-  { label: "最近72小时", value: 72 },
+  { label: "1小时", value: 1 },
+  { label: "3小时", value: 3 },
+  { label: "6小时", value: 6 },
+  { label: "12小时", value: 12 },
+  { label: "24小时", value: 24 },
+  { label: "72小时", value: 72 },
 ];
 
 export default function TimeRangeSelector({
@@ -27,7 +27,11 @@ export default function TimeRangeSelector({
         {timeRangeOptions.map((option) => (
           <button
             key={option.value}
-            onClick={() => onChange(option.value)}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              onChange(option.value);
+            }}
             className={`px-4 py-2 rounded font-medium transition-all ${
               value === option.value
                 ? "bg-blue-600 text-white shadow-md"

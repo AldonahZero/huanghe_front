@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 
 interface RunningTimeProps {
-  createdAt: string | null;
+  createdAt: string | null | undefined;
   className?: string;
 }
 
