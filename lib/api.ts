@@ -67,11 +67,27 @@ async function request<T = unknown>(path: string, init: RequestInit = {}): Promi
         }
 
         const dataObj = data && typeof data === "object" && data !== null ? (data as Record<string, unknown>) : undefined;
-        const message = (dataObj && (dataObj["message"] ?? dataObj["error"])) ?? res.statusText ?? "Request failed";
-        const err: { message: string; status: number; payload?: unknown } = {
-            message: String(message),
+        const originalMessage = (dataObj && (dataObj["message"] ?? dataObj["error"])) ?? res.statusText ?? "Request failed";
+
+        // 翻译常见错误信息为中文提示，保留原始信息在 originalMessage 字段中
+        let zhMessage = "请求失败";
+        try {
+            const code = res.status;
+            if (code === 400) zhMessage = "请求无效，请检查输入参数";
+            else if (code === 401) zhMessage = "未授权或登录已过期，请重新登录";
+            else if (code === 403) zhMessage = "没有权限执行此操作";
+            else if (code === 404) zhMessage = "未找到请求的资源";
+            else if (code >= 500 && code < 600) zhMessage = "服务器内部错误，请稍后重试";
+            else if (typeof originalMessage === "string" && originalMessage.length) zhMessage = String(originalMessage);
+        } catch (e) {
+            zhMessage = String(originalMessage);
+        }
+
+        const err: { message: string; status: number; payload?: unknown; originalMessage?: unknown } = {
+            message: zhMessage,
             status: res.status,
             payload: data,
+            originalMessage: originalMessage,
         };
         throw err;
     }

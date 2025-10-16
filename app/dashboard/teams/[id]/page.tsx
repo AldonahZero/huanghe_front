@@ -69,11 +69,15 @@ export default function TeamDetailPage() {
 
   // 检查权限
   const hasPermission = user?.role === "admin" || user?.role === "teacher";
+  const isMemberOnly = !!user && !hasPermission;
 
   // 加载团队信息
   useEffect(() => {
-    if (user && hasPermission && teamId) {
-      loadTeamInfo();
+    if (!user || !teamId) return;
+    // 所有人（登录用户）都可加载团队基本信息
+    loadTeamInfo();
+    // 仅管理员/老师加载邀请码
+    if (hasPermission) {
       loadInviteCodes();
     }
   }, [user, hasPermission, teamId]);
@@ -310,12 +314,12 @@ export default function TeamDetailPage() {
     );
   }
 
-  if (!user || !hasPermission) {
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-600 mb-4 text-xl">⚠️ 权限不足</div>
-          <p className="text-gray-600">只有管理员和老师可以访问团队设置</p>
+          <div className="text-red-600 mb-4 text-xl">⚠️ 未登录</div>
+          <p className="text-gray-600">请先登录后查看团队信息</p>
         </div>
       </div>
     );
@@ -334,7 +338,9 @@ export default function TeamDetailPage() {
           返回团队列表
         </Button>
 
-        <h1 className="text-3xl font-bold mb-6">团队设置</h1>
+        <h1 className="text-3xl font-bold mb-6">
+          {hasPermission ? "团队设置" : "团队信息（只读）"}
+        </h1>
 
         {message && (
           <Alert
@@ -385,7 +391,7 @@ export default function TeamDetailPage() {
                     </AvatarFallback>
                   </Avatar>
 
-                  {isEditing && (
+                  {isEditing && hasPermission && (
                     <div
                       className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-40 rounded-full transition-all cursor-pointer"
                       onClick={handleAvatarClick}
@@ -394,7 +400,7 @@ export default function TeamDetailPage() {
                     </div>
                   )}
 
-                  {avatarPreview && isEditing && (
+                  {avatarPreview && isEditing && hasPermission && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -458,7 +464,7 @@ export default function TeamDetailPage() {
                 </div>
               </div>
 
-              {isEditing && (
+              {isEditing && hasPermission && (
                 <div className="mt-4 text-xs text-gray-500 bg-white/60 backdrop-blur-sm rounded-lg p-3">
                   <p className="font-medium mb-1">💡 提示：</p>
                   <p>• 点击大头像可以上传团队头像</p>
@@ -483,7 +489,7 @@ export default function TeamDetailPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                disabled={!isEditing}
+                disabled={!isEditing || !hasPermission}
                 placeholder="输入团队名称"
               />
             </div>
@@ -497,7 +503,7 @@ export default function TeamDetailPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                disabled={!isEditing}
+                disabled={!isEditing || !hasPermission}
                 placeholder="输入团队描述"
                 className="w-full min-h-[100px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500"
               />
@@ -540,21 +546,27 @@ export default function TeamDetailPage() {
 
             {/* 操作按钮 */}
             <div className="flex gap-3 pt-4">
-              {!isEditing ? (
-                <Button onClick={() => setIsEditing(true)}>编辑信息</Button>
+              {hasPermission ? (
+                !isEditing ? (
+                  <Button onClick={() => setIsEditing(true)}>编辑信息</Button>
+                ) : (
+                  <>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                      {isSaving ? "保存中..." : "保存更改"}
+                    </Button>
+                    <Button
+                      onClick={handleCancel}
+                      variant="outline"
+                      disabled={isSaving}
+                    >
+                      取消
+                    </Button>
+                  </>
+                )
               ) : (
-                <>
-                  <Button onClick={handleSave} disabled={isSaving}>
-                    {isSaving ? "保存中..." : "保存更改"}
-                  </Button>
-                  <Button
-                    onClick={handleCancel}
-                    variant="outline"
-                    disabled={isSaving}
-                  >
-                    取消
-                  </Button>
-                </>
+                <div className="text-sm text-gray-500">
+                  您无权编辑该团队信息
+                </div>
               )}
             </div>
           </CardContent>
@@ -564,7 +576,11 @@ export default function TeamDetailPage() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>团队成员</CardTitle>
-            <CardDescription>团队成员列表（点击可编辑等级）</CardDescription>
+            <CardDescription>
+              {hasPermission
+                ? "团队成员列表（点击可编辑等级）"
+                : "团队成员列表（只读）"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {teamMembers.length === 0 ? (

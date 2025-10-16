@@ -94,6 +94,8 @@ export default function LanyardClient({
   const [canvasKey, setCanvasKey] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [glbUrl, setGlbUrl] = useState<string | null>(null);
+  // 模型加载状态
+  const [modelLoading, setModelLoading] = useState(true);
   const canvasListenersRef = useRef<{
     el?: HTMLCanvasElement | null;
     onLost?: EventListenerOrEventListenerObject;
@@ -310,7 +312,10 @@ export default function LanyardClient({
         >
           <ambientLight intensity={Math.PI} />
           <Physics gravity={gravity} timeStep={1 / 60}>
-            <Band glbUrl={glbUrl} />
+            <Band
+              glbUrl={glbUrl}
+              onModelLoaded={() => setModelLoading(false)}
+            />
           </Physics>
           <Environment blur={0.75}>
             <Lightformer
@@ -344,6 +349,34 @@ export default function LanyardClient({
           </Environment>
         </Canvas>
       )}
+      {/* 模型加载覆盖层 */}
+      {modelLoading && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40">
+          <div className="flex flex-col items-center gap-3">
+            <svg
+              className="w-12 h-12 text-white animate-spin"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              ></path>
+            </svg>
+            <div className="text-white">挂绳模型加载中，请稍候…</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -353,12 +386,14 @@ interface BandProps {
   minSpeed?: number;
   onHoverChange?: (hovered: boolean) => void;
   glbUrl?: string | null;
+  onModelLoaded?: () => void;
 }
 function Band({
   maxSpeed = 50,
   minSpeed = 0,
   onHoverChange,
   glbUrl,
+  onModelLoaded,
 }: BandProps) {
   // Using "any" for refs since the exact types depend on Rapier's internals
   const band = useRef<any>(null);
@@ -382,6 +417,14 @@ function Band({
   };
 
   const { nodes, materials } = useGLTF((glbUrl as string) || cardGLB) as any;
+  // 当 useGLTF 成功解析模型资源时通知父组件
+  useEffect(() => {
+    try {
+      if (nodes && materials) {
+        onModelLoaded?.();
+      }
+    } catch (err) {}
+  }, [nodes, materials, onModelLoaded]);
   const texture: any = useTexture(lanyard);
   const [curve] = useState(
     () =>
