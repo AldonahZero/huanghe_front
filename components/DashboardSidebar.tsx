@@ -25,12 +25,25 @@ export default function DashboardSidebar() {
     },
   ];
 
-  // 如果是管理员或老师,添加团队管理选项
-  const teamSettingItem = {
-    label: "团队管理",
-    ariaLabel: "管理 团队",
-    link: "/dashboard/teams",
-  };
+  // 分角色菜单项（方便后续扩展老师/会员的不同入口）
+  const isPrivileged = user?.role === "admin" || user?.role === "teacher";
+  const privilegedMenuItems = [
+    {
+      label: "团队管理",
+      ariaLabel: "管理 团队",
+      link: "/dashboard/teams",
+    },
+    // 未来可在此追加更多管理员/老师专属菜单项
+  ];
+
+  const memberMenuItems = [
+    {
+      label: "查看团队",
+      ariaLabel: "查看 团队",
+      link: "/dashboard/teams",
+    },
+    // 未来可在此追加更多会员专属菜单项
+  ];
 
   const settingsItem = {
     label: "设置",
@@ -41,9 +54,7 @@ export default function DashboardSidebar() {
   // 组合菜单项
   const menuItems = [
     ...baseMenuItems,
-    ...(user?.role === "admin" || user?.role === "teacher"
-      ? [teamSettingItem]
-      : []),
+    ...(user ? (isPrivileged ? privilegedMenuItems : memberMenuItems) : []),
     settingsItem,
   ];
 

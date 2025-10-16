@@ -156,7 +156,9 @@ export default function TeamsListPage() {
                 <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600 text-lg">暂无团队</p>
                 <p className="text-gray-500 text-sm mt-2">
-                  {user.role === "admin" ? "系统中还没有任何团队" : "您还没有创建团队"}
+                  {user.role === "admin"
+                    ? "系统中还没有任何团队"
+                    : "您还没有创建团队"}
                 </p>
               </CardContent>
             </Card>
@@ -200,7 +202,9 @@ export default function TeamsListPage() {
 
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="text-gray-500 text-xs mb-1">成员数量</div>
+                        <div className="text-gray-500 text-xs mb-1">
+                          成员数量
+                        </div>
                         <div className="font-semibold text-gray-900">
                           {team.member_count || 0} 人
                         </div>
@@ -216,7 +220,8 @@ export default function TeamsListPage() {
                     </div>
 
                     <div className="text-xs text-gray-500 pt-2 border-t">
-                      创建时间: {new Date(team.created_at).toLocaleDateString("zh-CN")}
+                      创建时间:{" "}
+                      {new Date(team.created_at).toLocaleDateString("zh-CN")}
                     </div>
 
                     <Button
@@ -257,7 +262,9 @@ export default function TeamsListPage() {
                         {myTeam.name}
                       </CardTitle>
                       <CardDescription className="text-sm">
-                        {myTeam.owner_nickname || myTeam.owner_name || `ID: ${myTeam.owner_id}`}
+                        {myTeam.owner_nickname ||
+                          myTeam.owner_name ||
+                          `ID: ${myTeam.owner_id}`}
                       </CardDescription>
                     </div>
                   </div>
@@ -279,7 +286,9 @@ export default function TeamsListPage() {
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="text-gray-500 text-xs mb-1">创建时间</div>
                       <div className="font-semibold text-gray-900 truncate">
-                        {new Date(myTeam.created_at).toLocaleDateString("zh-CN")}
+                        {new Date(myTeam.created_at).toLocaleDateString(
+                          "zh-CN"
+                        )}
                       </div>
                     </div>
                   </div>
@@ -301,7 +310,9 @@ export default function TeamsListPage() {
                 <CardContent className="py-12 text-center">
                   <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 text-lg">你暂未加入任何团队</p>
-                  <p className="text-gray-500 text-sm mt-2">请联系管理员或老师，邀请你加入团队</p>
+                  <p className="text-gray-500 text-sm mt-2">
+                    请联系管理员或老师，邀请你加入团队
+                  </p>
                 </CardContent>
               </Card>
             )}
