@@ -475,12 +475,99 @@ export async function getInviteCodes(teamId: number): Promise<{ invite_codes: In
     return request<{ invite_codes: InviteCodeInfo[] }>(`/api/team/${teamId}/invite-codes`);
 }
 
-// 更新团队成员的 member_level（管理员或团队老师可用）
+// 更新团队成员的 member_level(管理员或团队老师可用)
 export async function updateTeamMemberLevel(teamId: number, memberUserId: number, member_level: string | null): Promise<{ message: string; member: { user_id: number; username: string; user_nickname?: string | null; member_level?: string | null } }> {
     return request<{ message: string; member: { user_id: number; username: string; user_nickname?: string | null; member_level?: string | null } }>(`/api/team/${teamId}/members/${memberUserId}/member-level`, {
         method: "PUT",
         body: JSON.stringify({ member_level }),
     });
+}
+
+// User Trading Behavior - 用户交易行为
+export interface TradingBehaviorResponse {
+    user_id: number;
+    timestamp: string;
+    user_info: {
+        nickname_history: Array<{
+            nickname: string;
+            first_seen: string;
+            last_seen: string;
+        }>;
+        store_name_history: Array<{
+            store_name: string;
+            first_seen: string;
+            last_seen: string;
+        }>;
+    };
+    sell_commodities: Array<{
+        commodityId: number;
+        commodityNo: string;
+        commodityName: string;
+        price: string;
+        originalPrice?: string;
+        abrade: string;
+        exteriorName?: string;
+        userId: number;
+        userNickName: string;
+        storeName: string;
+        canBargain: boolean;
+        Stickers?: Array<{
+            Name: string;
+            Abrade: string;
+            ImgUrl: string;
+            priceV1?: string;
+            StickerDesc: string;
+        }>;
+    }>;
+    delivery_statistics: {
+        totalCount: number;
+        fastCount: number;
+        avgHourCount: number;
+        rateStr: string;
+    };
+    summary: {
+        total_sell_commodities: number;
+        average_price: number;
+        max_price: number;
+        min_price: number;
+    };
+    purchase_timeline: Array<{
+        crawl_time: string;
+        template_id: number;
+        template_name: string;
+        price: string;
+        quantity: number;
+        position: number;
+        order_id?: number;
+        exterior?: string;
+        abrade_min?: string;
+        abrade_max?: string;
+    }>;
+    sell_timeline: Array<{
+        crawl_time: string;
+        template_id: number;
+        template_name: string;
+        price: string;
+        original_price?: string;
+        quantity: number;
+        position: number;
+        commodity_id: number;
+        commodity_no: string;
+        abrade: string;
+        exterior_name?: string;
+        can_bargain?: boolean;
+        stickers: Array<{
+            Name: string;
+            Abrade: string;
+            ImgUrl: string;
+            priceV1?: string;
+            StickerDesc: string;
+        }>;
+    }>;
+}
+
+export async function getUserTradingBehavior(userId: number): Promise<TradingBehaviorResponse> {
+    return request<TradingBehaviorResponse>(`/api/users/${userId}/trading-behavior`);
 }
 
 const apiClient = {
@@ -510,6 +597,7 @@ const apiClient = {
     generateInviteCode,
     getInviteCodes,
     updateTeamMemberLevel,
+    getUserTradingBehavior,
 };
 
 export default apiClient;

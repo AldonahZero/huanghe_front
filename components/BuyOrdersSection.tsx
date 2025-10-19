@@ -1,6 +1,8 @@
 "use client";
 import { BuyOrder, PositionDistribution } from "@/types/project";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Eye } from "lucide-react";
 
 interface BuyOrdersSectionProps {
   topBuyers: BuyOrder[];
@@ -11,11 +13,17 @@ export default function BuyOrdersSection({
   topBuyers,
   positionDistribution,
 }: BuyOrdersSectionProps) {
+  const router = useRouter();
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
 
   const selectedDistribution = positionDistribution.find(
     (d) => d.userId === selectedUser
   );
+
+  const handleViewTrading = (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(`/dashboard/users/${userId}/trading-behavior`);
+  };
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -52,6 +60,13 @@ export default function BuyOrdersSection({
                   求购: {buyer.orderCount}次
                 </div>
               </div>
+              <button
+                onClick={(e) => handleViewTrading(buyer.userId, e)}
+                className="p-2 hover:bg-blue-100 rounded-lg transition-colors group"
+                title="查看交易轨迹"
+              >
+                <Eye className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+              </button>
             </div>
           ))}
         </div>

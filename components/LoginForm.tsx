@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Checkbox } from "./ui/checkbox";
 import { Button } from "./ui/button";
 
 interface Props {
@@ -18,6 +19,7 @@ export default function LoginForm({ onLogin }: Props) {
   const auth = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,8 +43,31 @@ export default function LoginForm({ onLogin }: Props) {
       setError(e?.message || "登录失败");
     } finally {
       setLoading(false);
+      try {
+        if (remember) {
+          const payload = JSON.stringify({ username, password });
+          localStorage.setItem("hh_saved_credentials", payload);
+        } else {
+          localStorage.removeItem("hh_saved_credentials");
+        }
+      } catch (e) {}
     }
   };
+
+  // 初始化：如果本地有保存的凭证则自动填充
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem("hh_saved_credentials");
+      if (saved) {
+        const obj = JSON.parse(saved);
+        if (obj?.username) setUsername(obj.username);
+        if (obj?.password) setPassword(obj.password);
+        setRemember(true);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   return (
     <form onSubmit={submit} className="w-full max-w-sm space-y-5">
@@ -70,6 +95,16 @@ export default function LoginForm({ onLogin }: Props) {
           placeholder="请输入密码"
           autoComplete="current-password"
         />
+      </div>
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="remember"
+          checked={remember}
+          onChange={(e) => setRemember(e.target.checked)}
+        />
+        <Label htmlFor="remember" className="cursor-pointer">
+          记住密码
+        </Label>
       </div>
       {error && <div className="text-sm text-red-600 mt-2">{error}</div>}
       <Button type="submit" className="w-full mt-2" disabled={loading}>

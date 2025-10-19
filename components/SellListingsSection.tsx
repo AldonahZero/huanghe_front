@@ -1,5 +1,7 @@
 "use client";
 import { SellListing } from "@/types/project";
+import { useRouter } from "next/navigation";
+import { Eye } from "lucide-react";
 
 interface SellListingsSectionProps {
   topSellers: SellListing[];
@@ -8,6 +10,13 @@ interface SellListingsSectionProps {
 export default function SellListingsSection({
   topSellers,
 }: SellListingsSectionProps) {
+  const router = useRouter();
+
+  const handleViewTrading = (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(`/dashboard/users/${userId}/trading-behavior`);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-xl font-semibold mb-4">在售数据分析</h3>
@@ -58,6 +67,13 @@ export default function SellListingsSection({
                   挂售: {seller.listingCount}次
                 </div>
               </div>
+              <button
+                onClick={(e) => handleViewTrading(seller.userId, e)}
+                className="p-2 hover:bg-green-100 rounded-lg transition-colors group"
+                title="查看交易轨迹"
+              >
+                <Eye className="w-4 h-4 text-gray-400 group-hover:text-green-600" />
+              </button>
             </div>
           ))}
         </div>
