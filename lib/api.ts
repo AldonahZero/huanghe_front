@@ -549,8 +549,56 @@ export interface TradingBehaviorResponse {
             [key: string]: any;
         }>;
     }>;
+    sell_commodities: Array<{
+        commodity_id: number;
+        commodity_no: string | null;
+        template_id: number;
+        template_name: string;
+        price: string;
+        abrade: string;
+        exterior_name: string;
+        can_bargain: boolean | null;
+        original_price: string | null;
+        create_time: string | null;
+        update_time: string | null;
+        asset_info: any;
+        stickers: Array<{
+            abrade: string;
+            hashName: string;
+            imgUrl: string;
+            material: string;
+            name: string;
+            num: number;
+            pattern: string | null;
+            price: string | null;
+            priceV1: string;
+            rawIndex: number;
+            stickerDesc: string;
+            stickerId: number;
+            templateHashName: string;
+        }>;
+    }>;
 }export async function getUserTradingBehavior(userId: number): Promise<TradingBehaviorResponse> {
     return request<TradingBehaviorResponse>(`/api/users/${userId}/trading-behavior`);
+}
+
+// 收藏用户
+export async function favoriteUser(userId: number): Promise<{ message: string }> {
+    return request<{ message: string }>(`/api/users/${userId}/favorite`, {
+        method: 'POST'
+    });
+}
+
+// 取消收藏用户
+export async function unfavoriteUser(userId: number): Promise<{ message: string }> {
+    return request<{ message: string }>(`/api/users/${userId}/favorite`, {
+        method: 'DELETE'
+    });
+}
+
+// 检查是否已收藏
+export async function checkFavoriteStatus(userId: number): Promise<{ is_favorited: boolean }> {
+    return request<{ is_favorited: boolean }>(`/api/users/${userId}/favorite/status`);
 }
 
 const apiClient = {

@@ -289,16 +289,56 @@ export default function TeamDetailPage() {
   // 复制邀请码
   const handleCopyCode = async (code: string) => {
     try {
-      await navigator.clipboard.writeText(code);
-      setCopiedCode(code);
-      setTimeout(() => {
-        setCopiedCode(null);
-      }, 2000);
+      // 优先使用现代 Clipboard API
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(code);
+        setCopiedCode(code);
+        setMessage({
+          type: "success",
+          text: "邀请码已复制到剪贴板！",
+        });
+        setTimeout(() => {
+          setCopiedCode(null);
+          setMessage(null);
+        }, 2000);
+      } else {
+        // 回退方案：使用传统方法
+        const textArea = document.createElement("textarea");
+        textArea.value = code;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        const successful = document.execCommand("copy");
+        document.body.removeChild(textArea);
+
+        if (successful) {
+          setCopiedCode(code);
+          setMessage({
+            type: "success",
+            text: "邀请码已复制到剪贴板！",
+          });
+          setTimeout(() => {
+            setCopiedCode(null);
+            setMessage(null);
+          }, 2000);
+        } else {
+          throw new Error("复制命令执行失败");
+        }
+      }
     } catch (error) {
+      console.error("复制失败:", error);
+      // 选中文本让用户手动复制
       setMessage({
         type: "error",
-        text: "复制失败，请手动复制",
+        text: "自动复制失败，请手动复制邀请码",
       });
+      setTimeout(() => {
+        setMessage(null);
+      }, 3000);
     }
   };
 
@@ -790,7 +830,17 @@ export default function TeamDetailPage() {
                         >
                           <div className="flex-1">
                             <div className="flex items-center gap-3">
-                              <code className="text-lg font-mono font-bold text-indigo-600">
+                              <code
+                                className="text-lg font-mono font-bold text-indigo-600 select-all cursor-pointer px-3 py-1 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors"
+                                title="点击选中邀请码"
+                                onClick={(e) => {
+                                  const range = document.createRange();
+                                  range.selectNodeContents(e.currentTarget);
+                                  const selection = window.getSelection();
+                                  selection?.removeAllRanges();
+                                  selection?.addRange(range);
+                                }}
+                              >
                                 {code.code}
                               </code>
                               <Button

@@ -22,7 +22,9 @@ import {
   Award,
   ChevronDown,
   ChevronUp,
+  Heart,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function UserTradingBehaviorPage() {
   const params = useParams();
@@ -36,6 +38,8 @@ export default function UserTradingBehaviorPage() {
   const [error, setError] = useState<string | null>(null);
   const [showNicknameHistory, setShowNicknameHistory] = useState(false);
   const [showStoreNameHistory, setShowStoreNameHistory] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -61,6 +65,40 @@ export default function UserTradingBehaviorPage() {
         setLoading(false);
       });
   }, [userId, authLoading, token]);
+
+  // 检查收藏状态
+  useEffect(() => {
+    if (authLoading || !token) return;
+
+    api
+      .checkFavoriteStatus(userId)
+      .then((response) => {
+        setIsFavorited(response.is_favorited);
+      })
+      .catch(() => {
+        // 静默失败，不影响页面主要功能
+      });
+  }, [userId, authLoading, token]);
+
+  // 切换收藏状态
+  const handleToggleFavorite = async () => {
+    if (favoriteLoading) return;
+
+    setFavoriteLoading(true);
+    try {
+      if (isFavorited) {
+        await api.unfavoriteUser(userId);
+        setIsFavorited(false);
+      } else {
+        await api.favoriteUser(userId);
+        setIsFavorited(true);
+      }
+    } catch (err: any) {
+      alert(err?.message || "操作失败，请重试");
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("zh-CN", {
@@ -102,13 +140,13 @@ export default function UserTradingBehaviorPage() {
       groups.get(key)!.push(item);
     });
 
-    // 对每个组内的数据按时间排序（最早在前）
+    // 对每个组内的数据按时间排序（最新在前）
     groups.forEach((items, key) => {
       groups.set(
         key,
         items.sort(
           (a, b) =>
-            new Date(a.crawl_time).getTime() - new Date(b.crawl_time).getTime()
+            new Date(b.crawl_time).getTime() - new Date(a.crawl_time).getTime()
         )
       );
     });
@@ -200,9 +238,44 @@ export default function UserTradingBehaviorPage() {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <CardTitle className="text-2xl mb-2">
-                  {currentNickname}
-                </CardTitle>
+                <div className="flex items-start justify-between mb-2">
+                  <CardTitle className="text-2xl">{currentNickname}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    {/* 收藏按钮 */}
+                    <Button
+                      onClick={handleToggleFavorite}
+                      disabled={favoriteLoading}
+                      variant={isFavorited ? "default" : "outline"}
+                      size="sm"
+                      className={`gap-2 ${
+                        isFavorited
+                          ? "bg-red-600 hover:bg-red-700 text-white"
+                          : ""
+                      }`}
+                    >
+                      <Heart
+                        className={`w-4 h-4 ${
+                          isFavorited ? "fill-current" : ""
+                        }`}
+                      />
+                      {favoriteLoading
+                        ? "处理中..."
+                        : isFavorited
+                        ? "已收藏"
+                        : "收藏"}
+                    </Button>
+                    {/* 访问商店按钮 */}
+                    <a
+                      href={`https://hybrid.youpin898.com/index.html#/shop/${userId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      访问商店
+                    </a>
+                  </div>
+                </div>
                 <div className="space-y-3 text-sm text-gray-600">
                   <div>用户ID: {userId}</div>
 
@@ -412,6 +485,118 @@ export default function UserTradingBehaviorPage() {
           </CardContent>
         </Card>
 
+        {/* 在售商品 */}
+        {data.sell_commodities && data.sell_commodities.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="w-5 h-5" />
+                在售商品
+              </CardTitle>
+              <CardDescription>
+                共 {data.sell_commodities.length} 件商品在售
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
+                {data.sell_commodities.map((commodity) => (
+                  <div
+                    key={commodity.commodity_id}
+                    className="border rounded-lg p-4 bg-white hover:shadow-md transition-all"
+                  >
+                    {/* 商品头部 */}
+                    <div className="mb-3">
+                      <div className="font-semibold text-gray-900 mb-2 flex items-start justify-between">
+                        <span className="flex-1 min-w-0 line-clamp-2">
+                          {commodity.template_name}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mb-2">
+                        {commodity.exterior_name && (
+                          <Badge variant="secondary" className="text-xs">
+                            {commodity.exterior_name}
+                          </Badge>
+                        )}
+                        <span>
+                          磨损: {parseFloat(commodity.abrade).toFixed(4)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 价格信息 */}
+                    <div className="mb-3 pb-3 border-b">
+                      <div className="flex items-baseline justify-between">
+                        <div>
+                          <div className="text-2xl font-bold text-green-600">
+                            {formatPrice(commodity.price)}
+                          </div>
+                          {commodity.original_price &&
+                            commodity.original_price !== commodity.price && (
+                              <div className="text-xs text-gray-400 line-through">
+                                原价: {formatPrice(commodity.original_price)}
+                              </div>
+                            )}
+                        </div>
+                        {commodity.can_bargain && (
+                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200">
+                            可议价
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 印花信息 */}
+                    {commodity.stickers && commodity.stickers.length > 0 && (
+                      <div className="mb-3">
+                        <div className="text-xs font-medium text-gray-600 mb-2">
+                          印花 ({commodity.stickers.length}):
+                        </div>
+                        <div className="space-y-2">
+                          {commodity.stickers
+                            .slice(0, 4)
+                            .map((sticker, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-2 text-xs"
+                              >
+                                <img
+                                  src={sticker.imgUrl}
+                                  alt={sticker.name}
+                                  className="w-8 h-8 object-contain rounded"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="truncate text-gray-700">
+                                    {sticker.name}
+                                  </div>
+                                  <div className="text-gray-400 text-[10px]">
+                                    {sticker.stickerDesc} · {sticker.priceV1}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          {commodity.stickers.length > 4 && (
+                            <div className="text-xs text-gray-400 text-center">
+                              +{commodity.stickers.length - 4} 更多印花
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 商品ID信息 */}
+                    <div className="text-xs text-gray-400 pt-2 border-t">
+                      <div>商品ID: {commodity.commodity_id}</div>
+                      {commodity.commodity_no && (
+                        <div>商品编号: {commodity.commodity_no}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* 挂售时间线 */}
         <Card className="mb-6">
           <CardHeader>
@@ -432,8 +617,8 @@ export default function UserTradingBehaviorPage() {
                 {Array.from(groupByOrder(data.sell_timeline).entries())
                   .slice(0, 30)
                   .map(([orderId, items]) => {
-                    const latestItem = items[items.length - 1];
-                    const firstItem = items[0];
+                    const latestItem = items[0]; // 最新的现在在数组开头
+                    const firstItem = items[items.length - 1]; // 最早的在数组末尾
 
                     return (
                       <div
@@ -485,7 +670,9 @@ export default function UserTradingBehaviorPage() {
                           </div>
                           <div className="space-y-1.5">
                             {items.map((item, idx) => {
-                              const prevItem = idx > 0 ? items[idx - 1] : null;
+                              // 现在数组是从新到旧，所以 idx+1 是更旧的记录
+                              const prevItem =
+                                idx < items.length - 1 ? items[idx + 1] : null;
                               const currentPrice = Number(item.price);
                               const prevPrice = prevItem
                                 ? Number(prevItem.price)
@@ -502,7 +689,7 @@ export default function UserTradingBehaviorPage() {
                                 );
                               }
 
-                              const isLatest = idx === items.length - 1;
+                              const isLatest = idx === 0; // 最新的现在是第一条（索引0）
 
                               return (
                                 <div
@@ -596,8 +783,8 @@ export default function UserTradingBehaviorPage() {
                 {Array.from(groupByOrder(data.purchase_timeline).entries())
                   .slice(0, 30)
                   .map(([orderId, items]) => {
-                    const latestItem = items[items.length - 1];
-                    const firstItem = items[0];
+                    const latestItem = items[0]; // 最新的现在在数组开头
+                    const firstItem = items[items.length - 1]; // 最早的在数组末尾
 
                     return (
                       <div
@@ -659,7 +846,9 @@ export default function UserTradingBehaviorPage() {
                           </div>
                           <div className="space-y-1.5">
                             {items.map((item, idx) => {
-                              const prevItem = idx > 0 ? items[idx - 1] : null;
+                              // 现在数组是从新到旧，所以 idx+1 是更旧的记录
+                              const prevItem =
+                                idx < items.length - 1 ? items[idx + 1] : null;
                               const currentPrice = item.price
                                 ? Number(item.price)
                                 : 0;
@@ -680,7 +869,7 @@ export default function UserTradingBehaviorPage() {
                                 );
                               }
 
-                              const isLatest = idx === items.length - 1;
+                              const isLatest = idx === 0; // 最新的现在是第一条（索引0）
 
                               return (
                                 <div
