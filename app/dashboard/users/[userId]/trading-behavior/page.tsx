@@ -77,14 +77,25 @@ export default function UserTradingBehaviorPage() {
   };
 
   // 按 order_id/commodity_id 分组时间线数据
-  const groupByOrder = <T extends { order_id?: string | null; commodity_id?: number; crawl_time: string; price: string | number | null }>(
+  const groupByOrder = <
+    T extends {
+      order_id?: string | null;
+      commodity_id?: number;
+      crawl_time: string;
+      price: string | number | null;
+    }
+  >(
     timeline: T[]
   ): Map<string, T[]> => {
     const groups = new Map<string, T[]>();
-    
+
     timeline.forEach((item) => {
       // 优先使用 order_id，如果为 null 则使用 commodity_id
-      const key = item.order_id || (item.commodity_id ? `commodity_${item.commodity_id}` : `unknown_${Math.random()}`);
+      const key =
+        item.order_id ||
+        (item.commodity_id
+          ? `commodity_${item.commodity_id}`
+          : `unknown_${Math.random()}`);
       if (!groups.has(key)) {
         groups.set(key, []);
       }
@@ -95,7 +106,10 @@ export default function UserTradingBehaviorPage() {
     groups.forEach((items, key) => {
       groups.set(
         key,
-        items.sort((a, b) => new Date(a.crawl_time).getTime() - new Date(b.crawl_time).getTime())
+        items.sort(
+          (a, b) =>
+            new Date(a.crawl_time).getTime() - new Date(b.crawl_time).getTime()
+        )
       );
     });
 
@@ -105,7 +119,8 @@ export default function UserTradingBehaviorPage() {
   // 计算价格变动百分比和方向
   const calculatePriceChange = (current: number, previous: number) => {
     const change = current - previous;
-    const changePercent = previous !== 0 ? ((change / previous) * 100).toFixed(2) : "0.00";
+    const changePercent =
+      previous !== 0 ? ((change / previous) * 100).toFixed(2) : "0.00";
     return {
       change,
       changePercent: Number(changePercent),
@@ -405,7 +420,8 @@ export default function UserTradingBehaviorPage() {
               挂售订单时间线
             </CardTitle>
             <CardDescription>
-              共 {groupByOrder(data.sell_timeline).size} 个订单，{data.sell_timeline.length} 条记录
+              共 {groupByOrder(data.sell_timeline).size} 个订单，
+              {data.sell_timeline.length} 条记录
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -418,7 +434,7 @@ export default function UserTradingBehaviorPage() {
                   .map(([orderId, items]) => {
                     const latestItem = items[items.length - 1];
                     const firstItem = items[0];
-                    
+
                     return (
                       <div
                         key={orderId}
@@ -429,17 +445,22 @@ export default function UserTradingBehaviorPage() {
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
                               {latestItem.template_name || "未知商品"}
-                              {latestItem.quantity && latestItem.quantity > 1 && (
-                                <Badge variant="outline" className="text-xs">
-                                  数量: {latestItem.quantity}
-                                </Badge>
-                              )}
+                              {latestItem.quantity &&
+                                latestItem.quantity > 1 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    数量: {latestItem.quantity}
+                                  </Badge>
+                                )}
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                               <span>订单ID: {orderId}</span>
-                              {latestItem.commodity_no && <span>商品编号: {latestItem.commodity_no}</span>}
+                              {latestItem.commodity_no && (
+                                <span>商品编号: {latestItem.commodity_no}</span>
+                              )}
                               <span>位次: #{latestItem.position}</span>
-                              <span>磨损: {parseFloat(latestItem.abrade).toFixed(4)}</span>
+                              <span>
+                                磨损: {parseFloat(latestItem.abrade).toFixed(4)}
+                              </span>
                               {latestItem.exterior_name && (
                                 <Badge variant="secondary" className="text-xs">
                                   {latestItem.exterior_name}
@@ -451,7 +472,9 @@ export default function UserTradingBehaviorPage() {
                             <div className="text-2xl font-bold text-amber-500">
                               {formatPrice(latestItem.price)}
                             </div>
-                            <div className="text-xs text-gray-400">当前价格</div>
+                            <div className="text-xs text-gray-400">
+                              当前价格
+                            </div>
                           </div>
                         </div>
 
@@ -464,11 +487,19 @@ export default function UserTradingBehaviorPage() {
                             {items.map((item, idx) => {
                               const prevItem = idx > 0 ? items[idx - 1] : null;
                               const currentPrice = Number(item.price);
-                              const prevPrice = prevItem ? Number(prevItem.price) : null;
-                              
+                              const prevPrice = prevItem
+                                ? Number(prevItem.price)
+                                : null;
+
                               let priceChange = null;
-                              if (prevPrice !== null && prevPrice !== currentPrice) {
-                                priceChange = calculatePriceChange(currentPrice, prevPrice);
+                              if (
+                                prevPrice !== null &&
+                                prevPrice !== currentPrice
+                              ) {
+                                priceChange = calculatePriceChange(
+                                  currentPrice,
+                                  prevPrice
+                                );
                               }
 
                               const isLatest = idx === items.length - 1;
@@ -477,16 +508,22 @@ export default function UserTradingBehaviorPage() {
                                 <div
                                   key={idx}
                                   className={`flex items-center gap-3 text-sm p-2 rounded ${
-                                    isLatest ? "bg-amber-50 border border-amber-200" : "bg-gray-50"
+                                    isLatest
+                                      ? "bg-amber-50 border border-amber-200"
+                                      : "bg-gray-50"
                                   }`}
                                 >
                                   <div className="text-xs text-gray-400 w-32 flex-shrink-0">
                                     {formatDate(item.crawl_time)}
                                   </div>
-                                  
-                                  <div className={`font-semibold ${
-                                    isLatest ? "text-amber-600" : "text-gray-700"
-                                  }`}>
+
+                                  <div
+                                    className={`font-semibold ${
+                                      isLatest
+                                        ? "text-amber-600"
+                                        : "text-gray-700"
+                                    }`}
+                                  >
                                     {formatPrice(item.price)}
                                   </div>
 
@@ -496,14 +533,16 @@ export default function UserTradingBehaviorPage() {
                                         <>
                                           <TrendingUp className="w-4 h-4 text-red-500" />
                                           <span className="text-red-500 text-xs font-medium">
-                                            +{formatPrice(priceChange.change)} (+{priceChange.changePercent}%)
+                                            +{formatPrice(priceChange.change)}{" "}
+                                            (+{priceChange.changePercent}%)
                                           </span>
                                         </>
                                       ) : priceChange.direction === "down" ? (
                                         <>
                                           <TrendingDown className="w-4 h-4 text-green-500" />
                                           <span className="text-green-500 text-xs font-medium">
-                                            {formatPrice(priceChange.change)} ({priceChange.changePercent}%)
+                                            {formatPrice(priceChange.change)} (
+                                            {priceChange.changePercent}%)
                                           </span>
                                         </>
                                       ) : null}
@@ -522,12 +561,15 @@ export default function UserTradingBehaviorPage() {
                         </div>
 
                         {/* 印花信息 */}
-                        {latestItem.stickers && latestItem.stickers.length > 0 && (
-                          <div className="mt-3 pt-3 border-t text-xs text-gray-500">
-                            <span className="font-medium">印花: </span>
-                            {latestItem.stickers.map((s) => s.Name).join(", ")}
-                          </div>
-                        )}
+                        {latestItem.stickers &&
+                          latestItem.stickers.length > 0 && (
+                            <div className="mt-3 pt-3 border-t text-xs text-gray-500">
+                              <span className="font-medium">印花: </span>
+                              {latestItem.stickers
+                                .map((s) => s.Name)
+                                .join(", ")}
+                            </div>
+                          )}
                       </div>
                     );
                   })}
@@ -545,7 +587,8 @@ export default function UserTradingBehaviorPage() {
                 求购订单时间线
               </CardTitle>
               <CardDescription>
-                共 {groupByOrder(data.purchase_timeline).size} 个订单，{data.purchase_timeline.length} 条记录
+                共 {groupByOrder(data.purchase_timeline).size} 个订单，
+                {data.purchase_timeline.length} 条记录
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -555,7 +598,7 @@ export default function UserTradingBehaviorPage() {
                   .map(([orderId, items]) => {
                     const latestItem = items[items.length - 1];
                     const firstItem = items[0];
-                    
+
                     return (
                       <div
                         key={orderId}
@@ -566,21 +609,28 @@ export default function UserTradingBehaviorPage() {
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
                               {latestItem.template_name || "未知商品"}
-                              {latestItem.quantity && latestItem.quantity > 1 && (
-                                <Badge variant="outline" className="text-xs">
-                                  数量: {latestItem.quantity}
-                                </Badge>
-                              )}
+                              {latestItem.quantity &&
+                                latestItem.quantity > 1 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    数量: {latestItem.quantity}
+                                  </Badge>
+                                )}
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                               <span>订单ID: {orderId}</span>
                               <span>位次: #{latestItem.position}</span>
-                              {latestItem.abrade && latestItem.abrade !== "null" && (
-                                <span>磨损: {parseFloat(latestItem.abrade).toFixed(4)}</span>
-                              )}
-                              {(latestItem.abrade_min || latestItem.abrade_max) && (
+                              {latestItem.abrade &&
+                                latestItem.abrade !== "null" && (
+                                  <span>
+                                    磨损:{" "}
+                                    {parseFloat(latestItem.abrade).toFixed(4)}
+                                  </span>
+                                )}
+                              {(latestItem.abrade_min ||
+                                latestItem.abrade_max) && (
                                 <span>
-                                  磨损范围: {latestItem.abrade_min || "0.00"} ~ {latestItem.abrade_max || "1.00"}
+                                  磨损范围: {latestItem.abrade_min || "0.00"} ~{" "}
+                                  {latestItem.abrade_max || "1.00"}
                                 </span>
                               )}
                               {latestItem.exterior_name && (
@@ -592,9 +642,13 @@ export default function UserTradingBehaviorPage() {
                           </div>
                           <div className="text-right">
                             <div className="text-2xl font-bold text-amber-500">
-                              {latestItem.price ? formatPrice(latestItem.price) : "未设置"}
+                              {latestItem.price
+                                ? formatPrice(latestItem.price)
+                                : "未设置"}
                             </div>
-                            <div className="text-xs text-gray-400">当前价格</div>
+                            <div className="text-xs text-gray-400">
+                              当前价格
+                            </div>
                           </div>
                         </div>
 
@@ -606,12 +660,24 @@ export default function UserTradingBehaviorPage() {
                           <div className="space-y-1.5">
                             {items.map((item, idx) => {
                               const prevItem = idx > 0 ? items[idx - 1] : null;
-                              const currentPrice = item.price ? Number(item.price) : 0;
-                              const prevPrice = prevItem && prevItem.price ? Number(prevItem.price) : null;
-                              
+                              const currentPrice = item.price
+                                ? Number(item.price)
+                                : 0;
+                              const prevPrice =
+                                prevItem && prevItem.price
+                                  ? Number(prevItem.price)
+                                  : null;
+
                               let priceChange = null;
-                              if (prevPrice !== null && prevPrice !== currentPrice && currentPrice > 0) {
-                                priceChange = calculatePriceChange(currentPrice, prevPrice);
+                              if (
+                                prevPrice !== null &&
+                                prevPrice !== currentPrice &&
+                                currentPrice > 0
+                              ) {
+                                priceChange = calculatePriceChange(
+                                  currentPrice,
+                                  prevPrice
+                                );
                               }
 
                               const isLatest = idx === items.length - 1;
@@ -620,17 +686,25 @@ export default function UserTradingBehaviorPage() {
                                 <div
                                   key={idx}
                                   className={`flex items-center gap-3 text-sm p-2 rounded ${
-                                    isLatest ? "bg-amber-50 border border-amber-200" : "bg-gray-50"
+                                    isLatest
+                                      ? "bg-amber-50 border border-amber-200"
+                                      : "bg-gray-50"
                                   }`}
                                 >
                                   <div className="text-xs text-gray-400 w-32 flex-shrink-0">
                                     {formatDate(item.crawl_time)}
                                   </div>
-                                  
-                                  <div className={`font-semibold ${
-                                    isLatest ? "text-amber-600" : "text-gray-700"
-                                  }`}>
-                                    {item.price ? formatPrice(item.price) : "未设置"}
+
+                                  <div
+                                    className={`font-semibold ${
+                                      isLatest
+                                        ? "text-amber-600"
+                                        : "text-gray-700"
+                                    }`}
+                                  >
+                                    {item.price
+                                      ? formatPrice(item.price)
+                                      : "未设置"}
                                   </div>
 
                                   {priceChange && (
@@ -639,14 +713,16 @@ export default function UserTradingBehaviorPage() {
                                         <>
                                           <TrendingUp className="w-4 h-4 text-red-500" />
                                           <span className="text-red-500 text-xs font-medium">
-                                            +{formatPrice(priceChange.change)} (+{priceChange.changePercent}%)
+                                            +{formatPrice(priceChange.change)}{" "}
+                                            (+{priceChange.changePercent}%)
                                           </span>
                                         </>
                                       ) : priceChange.direction === "down" ? (
                                         <>
                                           <TrendingDown className="w-4 h-4 text-green-500" />
                                           <span className="text-green-500 text-xs font-medium">
-                                            {formatPrice(priceChange.change)} ({priceChange.changePercent}%)
+                                            {formatPrice(priceChange.change)} (
+                                            {priceChange.changePercent}%)
                                           </span>
                                         </>
                                       ) : null}
@@ -665,12 +741,15 @@ export default function UserTradingBehaviorPage() {
                         </div>
 
                         {/* 印花信息 */}
-                        {latestItem.stickers && latestItem.stickers.length > 0 && (
-                          <div className="mt-3 pt-3 border-t text-xs text-gray-500">
-                            <span className="font-medium">印花: </span>
-                            {latestItem.stickers.map((s) => s.Name).join(", ")}
-                          </div>
-                        )}
+                        {latestItem.stickers &&
+                          latestItem.stickers.length > 0 && (
+                            <div className="mt-3 pt-3 border-t text-xs text-gray-500">
+                              <span className="font-medium">印花: </span>
+                              {latestItem.stickers
+                                .map((s) => s.Name)
+                                .join(", ")}
+                            </div>
+                          )}
                       </div>
                     );
                   })}
