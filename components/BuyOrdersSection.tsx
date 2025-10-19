@@ -22,7 +22,17 @@ export default function BuyOrdersSection({
 
   const handleViewTrading = (userId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    router.push(`/dashboard/users/${userId}/trading-behavior`);
+    // 如果有头像/用户名/店铺名，作为查询参数传递过去 (URLSearchParams 会自动编码)
+    const buyer = topBuyers.find((b) => b.userId === userId);
+    const params = new URLSearchParams();
+    if (buyer?.avatarUrl) params.set("avatar", buyer.avatarUrl);
+    if (buyer?.userName) params.set("userName", buyer.userName);
+    if ((buyer as any)?.storeName) params.set("storeName", (buyer as any).storeName);
+    const qs = params.toString();
+    const url = qs
+      ? `/dashboard/users/${userId}/trading-behavior?${qs}`
+      : `/dashboard/users/${userId}/trading-behavior`;
+    router.push(url);
   };
 
   return (

@@ -14,7 +14,17 @@ export default function SellListingsSection({
 
   const handleViewTrading = (userId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    router.push(`/dashboard/users/${userId}/trading-behavior`);
+    // 将卖家头像/用户名/店铺名作为查询参数传递
+    const seller = topSellers.find((s) => s.userId === userId);
+    const params = new URLSearchParams();
+    if (seller?.avatarUrl) params.set("avatar", seller.avatarUrl);
+    if (seller?.userName) params.set("userName", seller.userName);
+    if ((seller as any)?.storeName) params.set("storeName", (seller as any).storeName);
+    const qs = params.toString();
+    const url = qs
+      ? `/dashboard/users/${userId}/trading-behavior?${qs}`
+      : `/dashboard/users/${userId}/trading-behavior`;
+    router.push(url);
   };
 
   return (

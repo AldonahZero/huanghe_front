@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import * as api from "@/lib/api";
 import {
@@ -20,17 +20,22 @@ import {
   ShoppingCart,
   Clock,
   Award,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 export default function UserTradingBehaviorPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const userId = parseInt(params.userId as string);
   const { token, loading: authLoading } = useAuth();
 
   const [data, setData] = useState<api.TradingBehaviorResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showNicknameHistory, setShowNicknameHistory] = useState(false);
+  const [showStoreNameHistory, setShowStoreNameHistory] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -100,9 +105,15 @@ export default function UserTradingBehaviorPage() {
 
   if (!data) return null;
 
+  // 从查询参数读取 avatar/userName/storeName
+  const avatarFromQuery = typeof window !== "undefined" ? searchParams?.get("avatar") : null;
+  const avatarSrc = avatarFromQuery ? decodeURIComponent(avatarFromQuery) : undefined;
+  const userNameFromQuery = typeof window !== "undefined" ? searchParams?.get("userName") : null;
+  const storeNameFromQuery = typeof window !== "undefined" ? searchParams?.get("storeName") : null;
+
   const currentNickname =
-    data.user_info.nickname_history[0]?.name || `用户${userId}`;
-  const currentStoreName = data.user_info.store_name_history[0]?.name;
+    data.user_info.nickname_history[0]?.name || userNameFromQuery || `用户${userId}`;
+  const currentStoreName = data.user_info.store_name_history[0]?.name || storeNameFromQuery || undefined;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -121,7 +132,7 @@ export default function UserTradingBehaviorPage() {
           <CardHeader>
             <div className="flex items-start gap-4">
               <Avatar className="h-20 w-20">
-                <AvatarImage src="/logo.ico" />
+                <AvatarImage src={avatarSrc || "/logo.ico"} />
                 <AvatarFallback className="text-2xl">
                   {currentNickname.charAt(0).toUpperCase()}
                 </AvatarFallback>
@@ -130,9 +141,81 @@ export default function UserTradingBehaviorPage() {
                 <CardTitle className="text-2xl mb-2">
                   {currentNickname}
                 </CardTitle>
-                <div className="space-y-1 text-sm text-gray-600">
+                <div className="space-y-3 text-sm text-gray-600">
                   <div>用户ID: {userId}</div>
-                  {currentStoreName && <div>店铺名: {currentStoreName}</div>}
+                  
+                  {/* 昵称历史展开 */}
+                  {data.user_info.nickname_history.length > 0 && (
+                    <div>
+                      <button
+                        onClick={() => setShowNicknameHistory(!showNicknameHistory)}
+                        className="flex items-center gap-2 hover:text-gray-900 transition-colors group"
+                      >
+                        <span>昵称: {currentNickname}</span>
+                        {data.user_info.nickname_history.length > 1 && (
+                          <span className="text-gray-400 group-hover:text-gray-600 transition-colors">
+                            {showNicknameHistory ? (
+                              <ChevronUp className="w-4 h-4" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4" />
+                            )}
+                          </span>
+                        )}
+                      </button>
+                      {showNicknameHistory && data.user_info.nickname_history.length > 1 && (
+                        <div className="mt-2 ml-4 space-y-2 text-xs animate-in slide-in-from-top-2 duration-200">
+                          <div className="text-gray-400 mb-1">历史昵称:</div>
+                          {data.user_info.nickname_history.map((record, index) => (
+                            <div key={index} className="bg-gray-50 rounded px-3 py-2 flex items-start gap-2">
+                              <Badge variant="secondary" className="text-xs shrink-0">
+                                {record.name}
+                              </Badge>
+                              <span className="text-gray-500 text-[11px] leading-5">
+                                {formatDate(record.first_seen)}<br />~ {formatDate(record.last_seen)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 店铺名历史展开 */}
+                  {currentStoreName && (
+                    <div>
+                      <button
+                        onClick={() => setShowStoreNameHistory(!showStoreNameHistory)}
+                        className="flex items-center gap-2 hover:text-gray-900 transition-colors group"
+                      >
+                        <span>店铺名: {currentStoreName}</span>
+                        {data.user_info.store_name_history.length > 1 && (
+                          <span className="text-gray-400 group-hover:text-gray-600 transition-colors">
+                            {showStoreNameHistory ? (
+                              <ChevronUp className="w-4 h-4" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4" />
+                            )}
+                          </span>
+                        )}
+                      </button>
+                      {showStoreNameHistory && data.user_info.store_name_history.length > 1 && (
+                        <div className="mt-2 ml-4 space-y-2 text-xs animate-in slide-in-from-top-2 duration-200">
+                          <div className="text-gray-400 mb-1">历史店铺名:</div>
+                          {data.user_info.store_name_history.map((record, index) => (
+                            <div key={index} className="bg-gray-50 rounded px-3 py-2 flex items-start gap-2">
+                              <Badge variant="secondary" className="text-xs shrink-0">
+                                {record.name}
+                              </Badge>
+                              <span className="text-gray-500 text-[11px] leading-5">
+                                {formatDate(record.first_seen)}<br />~ {formatDate(record.last_seen)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="text-xs text-gray-500">
                     数据更新时间: {formatDate(data.timestamp)}
                   </div>
