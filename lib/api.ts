@@ -485,88 +485,56 @@ export async function updateTeamMemberLevel(teamId: number, memberUserId: number
 
 // User Trading Behavior - 用户交易行为
 export interface TradingBehaviorResponse {
-    user_id: number;
-    timestamp: string;
-    user_info: {
-        nickname_history: Array<{
-            nickname: string;
-            first_seen: string;
-            last_seen: string;
-        }>;
-        store_name_history: Array<{
-            store_name: string;
-            first_seen: string;
-            last_seen: string;
-        }>;
-    };
-    sell_commodities: Array<{
-        commodityId: number;
-        commodityNo: string;
-        commodityName: string;
-        price: string;
-        originalPrice?: string;
-        abrade: string;
-        exteriorName?: string;
-        userId: number;
-        userNickName: string;
-        storeName: string;
-        canBargain: boolean;
-        Stickers?: Array<{
-            Name: string;
-            Abrade: string;
-            ImgUrl: string;
-            priceV1?: string;
-            StickerDesc: string;
-        }>;
+  timestamp: string;
+  user_info: {
+    nickname_history: Array<{
+      name: string;
+      first_seen: string;
+      last_seen: string;
     }>;
-    delivery_statistics: {
-        totalCount: number;
-        fastCount: number;
-        avgHourCount: number;
-        rateStr: string;
-    };
-    summary: {
-        total_sell_commodities: number;
-        average_price: number;
-        max_price: number;
-        min_price: number;
-    };
-    purchase_timeline: Array<{
-        crawl_time: string;
-        template_id: number;
-        template_name: string;
-        price: string;
-        quantity: number;
-        position: number;
-        order_id?: number;
-        exterior?: string;
-        abrade_min?: string;
-        abrade_max?: string;
+    store_name_history: Array<{
+      name: string;
+      first_seen: string;
+      last_seen: string;
     }>;
-    sell_timeline: Array<{
-        crawl_time: string;
-        template_id: number;
-        template_name: string;
-        price: string;
-        original_price?: string;
-        quantity: number;
-        position: number;
-        commodity_id: number;
-        commodity_no: string;
-        abrade: string;
-        exterior_name?: string;
-        can_bargain?: boolean;
-        stickers: Array<{
-            Name: string;
-            Abrade: string;
-            ImgUrl: string;
-            priceV1?: string;
-            StickerDesc: string;
-        }>;
+  };
+  summary: {
+    active_listings: number;
+    current_page_count: number;
+    page_index: number;
+    page_size: number;
+    total_sell_count: number;
+  };
+  delivery_statistics: {
+    avg_deliver_time: string;
+    deliver_success_rate: string;
+    un_deliver_number: string;
+  };
+  sell_timeline: Array<{
+    template_name: string;
+    price: string | number;
+    abrade: string;
+    position: number;
+    exterior_name?: string;
+    crawl_time: string;
+    stickers?: Array<{
+      Name: string;
+      [key: string]: any;
     }>;
-}
-
-export async function getUserTradingBehavior(userId: number): Promise<TradingBehaviorResponse> {
+  }>;
+  purchase_timeline: Array<{
+    template_name: string;
+    price: string | number;
+    abrade: string;
+    position: number;
+    exterior_name?: string;
+    crawl_time: string;
+    stickers?: Array<{
+      Name: string;
+      [key: string]: any;
+    }>;
+  }>;
+}export async function getUserTradingBehavior(userId: number): Promise<TradingBehaviorResponse> {
     return request<TradingBehaviorResponse>(`/api/users/${userId}/trading-behavior`);
 }
 

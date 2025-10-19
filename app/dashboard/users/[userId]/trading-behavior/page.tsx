@@ -101,8 +101,8 @@ export default function UserTradingBehaviorPage() {
   if (!data) return null;
 
   const currentNickname =
-    data.user_info.nickname_history[0]?.nickname || `用户${userId}`;
-  const currentStoreName = data.user_info.store_name_history[0]?.store_name;
+    data.user_info.nickname_history[0]?.name || `用户${userId}`;
+  const currentStoreName = data.user_info.store_name_history[0]?.name;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -151,9 +151,9 @@ export default function UserTradingBehaviorPage() {
                   <Package className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
-                  <div className="text-sm text-gray-500">在售商品</div>
+                  <div className="text-sm text-gray-500">当前页商品数</div>
                   <div className="text-2xl font-bold text-green-600">
-                    {data.summary.total_sell_commodities}
+                    {data.summary.current_page_count}
                   </div>
                 </div>
               </div>
@@ -167,9 +167,9 @@ export default function UserTradingBehaviorPage() {
                   <TrendingUp className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <div className="text-sm text-gray-500">平均价格</div>
+                  <div className="text-sm text-gray-500">总出售次数</div>
                   <div className="text-2xl font-bold text-blue-600">
-                    {formatPrice(data.summary.average_price)}
+                    {data.summary.total_sell_count}
                   </div>
                 </div>
               </div>
@@ -183,9 +183,9 @@ export default function UserTradingBehaviorPage() {
                   <ShoppingCart className="w-6 h-6 text-purple-600" />
                 </div>
                 <div>
-                  <div className="text-sm text-gray-500">订单数量</div>
+                  <div className="text-sm text-gray-500">在售列表数</div>
                   <div className="text-2xl font-bold text-purple-600">
-                    {data.delivery_statistics.totalCount}
+                    {data.summary.active_listings}
                   </div>
                 </div>
               </div>
@@ -199,9 +199,9 @@ export default function UserTradingBehaviorPage() {
                   <Award className="w-6 h-6 text-amber-600" />
                 </div>
                 <div>
-                  <div className="text-sm text-gray-500">快速发货率</div>
+                  <div className="text-sm text-gray-500">发货成功率</div>
                   <div className="text-2xl font-bold text-amber-600">
-                    {data.delivery_statistics.rateStr}
+                    {data.delivery_statistics.deliver_success_rate}
                   </div>
                 </div>
               </div>
@@ -220,21 +220,21 @@ export default function UserTradingBehaviorPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-gray-50 rounded-lg p-4">
-                <div className="text-sm text-gray-500 mb-1">总订单数</div>
-                <div className="text-xl font-semibold">
-                  {data.delivery_statistics.totalCount}
-                </div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="text-sm text-gray-500 mb-1">快速发货数</div>
-                <div className="text-xl font-semibold text-green-600">
-                  {data.delivery_statistics.fastCount}
-                </div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
                 <div className="text-sm text-gray-500 mb-1">平均发货时长</div>
                 <div className="text-xl font-semibold">
-                  {data.delivery_statistics.avgHourCount.toFixed(1)} 小时
+                  {data.delivery_statistics.avg_deliver_time}
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-500 mb-1">发货成功率</div>
+                <div className="text-xl font-semibold text-green-600">
+                  {data.delivery_statistics.deliver_success_rate}
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-500 mb-1">未发货次数</div>
+                <div className="text-xl font-semibold text-red-600">
+                  {data.delivery_statistics.un_deliver_number}
                 </div>
               </div>
             </div>
@@ -329,15 +329,18 @@ export default function UserTradingBehaviorPage() {
                             价格: {formatPrice(item.price)}
                           </span>
                           <span>位次: #{item.position}</span>
-                          <span>数量: {item.quantity}</span>
-                          {item.exterior && (
-                            <Badge variant="secondary">{item.exterior}</Badge>
+                          <span>
+                            磨损: {parseFloat(item.abrade).toFixed(4)}
+                          </span>
+                          {item.exterior_name && (
+                            <Badge variant="secondary">
+                              {item.exterior_name}
+                            </Badge>
                           )}
                         </div>
-                        {(item.abrade_min || item.abrade_max) && (
+                        {item.stickers && item.stickers.length > 0 && (
                           <div className="mt-2 text-xs text-gray-500">
-                            磨损范围: {item.abrade_min || "0.00"} ~{" "}
-                            {item.abrade_max || "1.00"}
+                            印花: {item.stickers.map((s) => s.Name).join(", ")}
                           </div>
                         )}
                       </div>
@@ -371,7 +374,7 @@ export default function UserTradingBehaviorPage() {
                         key={index}
                         className="text-sm text-gray-600 flex items-center gap-2"
                       >
-                        <span className="font-medium">{record.nickname}</span>
+                        <span className="font-medium">{record.name}</span>
                         <span className="text-xs text-gray-400">
                           ({formatDate(record.first_seen)} ~{" "}
                           {formatDate(record.last_seen)})
@@ -392,7 +395,7 @@ export default function UserTradingBehaviorPage() {
                         key={index}
                         className="text-sm text-gray-600 flex items-center gap-2"
                       >
-                        <span className="font-medium">{record.store_name}</span>
+                        <span className="font-medium">{record.name}</span>
                         <span className="text-xs text-gray-400">
                           ({formatDate(record.first_seen)} ~{" "}
                           {formatDate(record.last_seen)})
