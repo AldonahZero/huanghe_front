@@ -19,7 +19,8 @@ export default function SellListingsSection({
     const params = new URLSearchParams();
     if (seller?.avatarUrl) params.set("avatar", seller.avatarUrl);
     if (seller?.userName) params.set("userName", seller.userName);
-    if ((seller as any)?.storeName) params.set("storeName", (seller as any).storeName);
+    if ((seller as any)?.storeName)
+      params.set("storeName", (seller as any).storeName);
     const qs = params.toString();
     const url = qs
       ? `/dashboard/users/${userId}/trading-behavior?${qs}`

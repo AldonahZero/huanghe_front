@@ -511,23 +511,38 @@ export interface TradingBehaviorResponse {
         un_deliver_number: string;
     };
     sell_timeline: Array<{
-        template_name: string;
+        commodity_id?: number;
+        commodity_no?: string;
+        order_id?: string | null;
+        template_id?: number;
+        template_name?: string | null;
         price: string | number;
         abrade: string;
+        abrade_min?: string | null;
+        abrade_max?: string | null;
         position: number;
-        exterior_name?: string;
+        quantity?: number;
+        exterior_name?: string | null;
         crawl_time: string;
+        can_bargain?: boolean | null;
+        original_price?: string | number | null;
         stickers?: Array<{
             Name: string;
             [key: string]: any;
         }>;
     }>;
     purchase_timeline: Array<{
-        template_name: string;
-        price: string | number;
+        order_id?: string | null;
+        template_id?: number;
+        template_name?: string | null;
+        price: string | number | null;
         abrade: string;
+        abrade_min?: string | null;
+        abrade_max?: string | null;
         position: number;
-        exterior_name?: string;
+        quantity?: number;
+        exterior?: string | null;
+        exterior_name?: string | null;
         crawl_time: string;
         stickers?: Array<{
             Name: string;

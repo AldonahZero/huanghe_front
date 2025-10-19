@@ -76,6 +76,43 @@ export default function UserTradingBehaviorPage() {
     return `¥${Number(price).toLocaleString("zh-CN")}`;
   };
 
+  // 按 order_id/commodity_id 分组时间线数据
+  const groupByOrder = <T extends { order_id?: string | null; commodity_id?: number; crawl_time: string; price: string | number | null }>(
+    timeline: T[]
+  ): Map<string, T[]> => {
+    const groups = new Map<string, T[]>();
+    
+    timeline.forEach((item) => {
+      // 优先使用 order_id，如果为 null 则使用 commodity_id
+      const key = item.order_id || (item.commodity_id ? `commodity_${item.commodity_id}` : `unknown_${Math.random()}`);
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(item);
+    });
+
+    // 对每个组内的数据按时间排序（最早在前）
+    groups.forEach((items, key) => {
+      groups.set(
+        key,
+        items.sort((a, b) => new Date(a.crawl_time).getTime() - new Date(b.crawl_time).getTime())
+      );
+    });
+
+    return groups;
+  };
+
+  // 计算价格变动百分比和方向
+  const calculatePriceChange = (current: number, previous: number) => {
+    const change = current - previous;
+    const changePercent = previous !== 0 ? ((change / previous) * 100).toFixed(2) : "0.00";
+    return {
+      change,
+      changePercent: Number(changePercent),
+      direction: change > 0 ? "up" : change < 0 ? "down" : "same",
+    };
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -106,14 +143,24 @@ export default function UserTradingBehaviorPage() {
   if (!data) return null;
 
   // 从查询参数读取 avatar/userName/storeName
-  const avatarFromQuery = typeof window !== "undefined" ? searchParams?.get("avatar") : null;
-  const avatarSrc = avatarFromQuery ? decodeURIComponent(avatarFromQuery) : undefined;
-  const userNameFromQuery = typeof window !== "undefined" ? searchParams?.get("userName") : null;
-  const storeNameFromQuery = typeof window !== "undefined" ? searchParams?.get("storeName") : null;
+  const avatarFromQuery =
+    typeof window !== "undefined" ? searchParams?.get("avatar") : null;
+  const avatarSrc = avatarFromQuery
+    ? decodeURIComponent(avatarFromQuery)
+    : undefined;
+  const userNameFromQuery =
+    typeof window !== "undefined" ? searchParams?.get("userName") : null;
+  const storeNameFromQuery =
+    typeof window !== "undefined" ? searchParams?.get("storeName") : null;
 
   const currentNickname =
-    data.user_info.nickname_history[0]?.name || userNameFromQuery || `用户${userId}`;
-  const currentStoreName = data.user_info.store_name_history[0]?.name || storeNameFromQuery || undefined;
+    data.user_info.nickname_history[0]?.name ||
+    userNameFromQuery ||
+    `用户${userId}`;
+  const currentStoreName =
+    data.user_info.store_name_history[0]?.name ||
+    storeNameFromQuery ||
+    undefined;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -143,12 +190,14 @@ export default function UserTradingBehaviorPage() {
                 </CardTitle>
                 <div className="space-y-3 text-sm text-gray-600">
                   <div>用户ID: {userId}</div>
-                  
+
                   {/* 昵称历史展开 */}
                   {data.user_info.nickname_history.length > 0 && (
                     <div>
                       <button
-                        onClick={() => setShowNicknameHistory(!showNicknameHistory)}
+                        onClick={() =>
+                          setShowNicknameHistory(!showNicknameHistory)
+                        }
                         className="flex items-center gap-2 hover:text-gray-900 transition-colors group"
                       >
                         <span>昵称: {currentNickname}</span>
@@ -162,21 +211,31 @@ export default function UserTradingBehaviorPage() {
                           </span>
                         )}
                       </button>
-                      {showNicknameHistory && data.user_info.nickname_history.length > 1 && (
-                        <div className="mt-2 ml-4 space-y-2 text-xs animate-in slide-in-from-top-2 duration-200">
-                          <div className="text-gray-400 mb-1">历史昵称:</div>
-                          {data.user_info.nickname_history.map((record, index) => (
-                            <div key={index} className="bg-gray-50 rounded px-3 py-2 flex items-start gap-2">
-                              <Badge variant="secondary" className="text-xs shrink-0">
-                                {record.name}
-                              </Badge>
-                              <span className="text-gray-500 text-[11px] leading-5">
-                                {formatDate(record.first_seen)}<br />~ {formatDate(record.last_seen)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      {showNicknameHistory &&
+                        data.user_info.nickname_history.length > 1 && (
+                          <div className="mt-2 ml-4 space-y-2 text-xs animate-in slide-in-from-top-2 duration-200">
+                            <div className="text-gray-400 mb-1">历史昵称:</div>
+                            {data.user_info.nickname_history.map(
+                              (record, index) => (
+                                <div
+                                  key={index}
+                                  className="bg-gray-50 rounded px-3 py-2 flex items-start gap-2"
+                                >
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs shrink-0"
+                                  >
+                                    {record.name}
+                                  </Badge>
+                                  <span className="text-gray-500 text-[11px] leading-5">
+                                    {formatDate(record.first_seen)}
+                                    <br />~ {formatDate(record.last_seen)}
+                                  </span>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
                     </div>
                   )}
 
@@ -184,7 +243,9 @@ export default function UserTradingBehaviorPage() {
                   {currentStoreName && (
                     <div>
                       <button
-                        onClick={() => setShowStoreNameHistory(!showStoreNameHistory)}
+                        onClick={() =>
+                          setShowStoreNameHistory(!showStoreNameHistory)
+                        }
                         className="flex items-center gap-2 hover:text-gray-900 transition-colors group"
                       >
                         <span>店铺名: {currentStoreName}</span>
@@ -198,21 +259,33 @@ export default function UserTradingBehaviorPage() {
                           </span>
                         )}
                       </button>
-                      {showStoreNameHistory && data.user_info.store_name_history.length > 1 && (
-                        <div className="mt-2 ml-4 space-y-2 text-xs animate-in slide-in-from-top-2 duration-200">
-                          <div className="text-gray-400 mb-1">历史店铺名:</div>
-                          {data.user_info.store_name_history.map((record, index) => (
-                            <div key={index} className="bg-gray-50 rounded px-3 py-2 flex items-start gap-2">
-                              <Badge variant="secondary" className="text-xs shrink-0">
-                                {record.name}
-                              </Badge>
-                              <span className="text-gray-500 text-[11px] leading-5">
-                                {formatDate(record.first_seen)}<br />~ {formatDate(record.last_seen)}
-                              </span>
+                      {showStoreNameHistory &&
+                        data.user_info.store_name_history.length > 1 && (
+                          <div className="mt-2 ml-4 space-y-2 text-xs animate-in slide-in-from-top-2 duration-200">
+                            <div className="text-gray-400 mb-1">
+                              历史店铺名:
                             </div>
-                          ))}
-                        </div>
-                      )}
+                            {data.user_info.store_name_history.map(
+                              (record, index) => (
+                                <div
+                                  key={index}
+                                  className="bg-gray-50 rounded px-3 py-2 flex items-start gap-2"
+                                >
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs shrink-0"
+                                  >
+                                    {record.name}
+                                  </Badge>
+                                  <span className="text-gray-500 text-[11px] leading-5">
+                                    {formatDate(record.first_seen)}
+                                    <br />~ {formatDate(record.last_seen)}
+                                  </span>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
                     </div>
                   )}
 
@@ -329,165 +402,279 @@ export default function UserTradingBehaviorPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
-              挂售时间线
+              挂售订单时间线
             </CardTitle>
             <CardDescription>
-              共 {data.sell_timeline.length} 条记录
+              共 {groupByOrder(data.sell_timeline).size} 个订单，{data.sell_timeline.length} 条记录
             </CardDescription>
           </CardHeader>
           <CardContent>
             {data.sell_timeline.length === 0 ? (
               <div className="text-center py-8 text-gray-500">暂无挂售记录</div>
             ) : (
-              <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                {data.sell_timeline.slice(0, 50).map((item, index) => (
-                  <div
-                    key={index}
-                    className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 mb-1">
-                          {item.template_name}
+              <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                {Array.from(groupByOrder(data.sell_timeline).entries())
+                  .slice(0, 30)
+                  .map(([orderId, items]) => {
+                    const latestItem = items[items.length - 1];
+                    const firstItem = items[0];
+                    
+                    return (
+                      <div
+                        key={orderId}
+                        className="border-2 border-gray-200 rounded-lg p-4 bg-white hover:shadow-md transition-all"
+                      >
+                        {/* 订单头部信息 */}
+                        <div className="flex items-start justify-between mb-3 pb-3 border-b">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                              {latestItem.template_name || "未知商品"}
+                              {latestItem.quantity && latestItem.quantity > 1 && (
+                                <Badge variant="outline" className="text-xs">
+                                  数量: {latestItem.quantity}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                              <span>订单ID: {orderId}</span>
+                              {latestItem.commodity_no && <span>商品编号: {latestItem.commodity_no}</span>}
+                              <span>位次: #{latestItem.position}</span>
+                              <span>磨损: {parseFloat(latestItem.abrade).toFixed(4)}</span>
+                              {latestItem.exterior_name && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {latestItem.exterior_name}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-amber-500">
+                              {formatPrice(latestItem.price)}
+                            </div>
+                            <div className="text-xs text-gray-400">当前价格</div>
+                          </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                          <span className="flex items-center gap-1">
-                            <TrendingUp className="w-4 h-4" />
-                            价格: {formatPrice(item.price)}
-                          </span>
-                          <span>位次: #{item.position}</span>
-                          <span>
-                            磨损: {parseFloat(item.abrade).toFixed(4)}
-                          </span>
-                          {item.exterior_name && (
-                            <Badge variant="secondary">
-                              {item.exterior_name}
-                            </Badge>
-                          )}
+
+                        {/* 价格变动时间线 */}
+                        <div className="space-y-2">
+                          <div className="text-xs font-medium text-gray-600 mb-2">
+                            价格变动历史 ({items.length} 次记录):
+                          </div>
+                          <div className="space-y-1.5">
+                            {items.map((item, idx) => {
+                              const prevItem = idx > 0 ? items[idx - 1] : null;
+                              const currentPrice = Number(item.price);
+                              const prevPrice = prevItem ? Number(prevItem.price) : null;
+                              
+                              let priceChange = null;
+                              if (prevPrice !== null && prevPrice !== currentPrice) {
+                                priceChange = calculatePriceChange(currentPrice, prevPrice);
+                              }
+
+                              const isLatest = idx === items.length - 1;
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`flex items-center gap-3 text-sm p-2 rounded ${
+                                    isLatest ? "bg-amber-50 border border-amber-200" : "bg-gray-50"
+                                  }`}
+                                >
+                                  <div className="text-xs text-gray-400 w-32 flex-shrink-0">
+                                    {formatDate(item.crawl_time)}
+                                  </div>
+                                  
+                                  <div className={`font-semibold ${
+                                    isLatest ? "text-amber-600" : "text-gray-700"
+                                  }`}>
+                                    {formatPrice(item.price)}
+                                  </div>
+
+                                  {priceChange && (
+                                    <div className="flex items-center gap-1">
+                                      {priceChange.direction === "up" ? (
+                                        <>
+                                          <TrendingUp className="w-4 h-4 text-red-500" />
+                                          <span className="text-red-500 text-xs font-medium">
+                                            +{formatPrice(priceChange.change)} (+{priceChange.changePercent}%)
+                                          </span>
+                                        </>
+                                      ) : priceChange.direction === "down" ? (
+                                        <>
+                                          <TrendingDown className="w-4 h-4 text-green-500" />
+                                          <span className="text-green-500 text-xs font-medium">
+                                            {formatPrice(priceChange.change)} ({priceChange.changePercent}%)
+                                          </span>
+                                        </>
+                                      ) : null}
+                                    </div>
+                                  )}
+
+                                  {isLatest && (
+                                    <Badge className="ml-auto bg-amber-500 text-white">
+                                      最新
+                                    </Badge>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                        {item.stickers && item.stickers.length > 0 && (
-                          <div className="mt-2 text-xs text-gray-500">
-                            印花: {item.stickers.map((s) => s.Name).join(", ")}
+
+                        {/* 印花信息 */}
+                        {latestItem.stickers && latestItem.stickers.length > 0 && (
+                          <div className="mt-3 pt-3 border-t text-xs text-gray-500">
+                            <span className="font-medium">印花: </span>
+                            {latestItem.stickers.map((s) => s.Name).join(", ")}
                           </div>
                         )}
                       </div>
-                      <div className="text-xs text-gray-500 text-right whitespace-nowrap">
-                        {formatDate(item.crawl_time)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* 求购时间线 */}
+        {/* 求购订单时间线 */}
         {data.purchase_timeline.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingDown className="w-5 h-5" />
-                求购时间线
+                求购订单时间线
               </CardTitle>
               <CardDescription>
-                共 {data.purchase_timeline.length} 条记录
+                共 {groupByOrder(data.purchase_timeline).size} 个订单，{data.purchase_timeline.length} 条记录
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                {data.purchase_timeline.slice(0, 50).map((item, index) => (
-                  <div
-                    key={index}
-                    className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 mb-1">
-                          {item.template_name}
+              <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                {Array.from(groupByOrder(data.purchase_timeline).entries())
+                  .slice(0, 30)
+                  .map(([orderId, items]) => {
+                    const latestItem = items[items.length - 1];
+                    const firstItem = items[0];
+                    
+                    return (
+                      <div
+                        key={orderId}
+                        className="border-2 border-gray-200 rounded-lg p-4 bg-white hover:shadow-md transition-all"
+                      >
+                        {/* 订单头部信息 */}
+                        <div className="flex items-start justify-between mb-3 pb-3 border-b">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                              {latestItem.template_name || "未知商品"}
+                              {latestItem.quantity && latestItem.quantity > 1 && (
+                                <Badge variant="outline" className="text-xs">
+                                  数量: {latestItem.quantity}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                              <span>订单ID: {orderId}</span>
+                              <span>位次: #{latestItem.position}</span>
+                              {latestItem.abrade && latestItem.abrade !== "null" && (
+                                <span>磨损: {parseFloat(latestItem.abrade).toFixed(4)}</span>
+                              )}
+                              {(latestItem.abrade_min || latestItem.abrade_max) && (
+                                <span>
+                                  磨损范围: {latestItem.abrade_min || "0.00"} ~ {latestItem.abrade_max || "1.00"}
+                                </span>
+                              )}
+                              {latestItem.exterior_name && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {latestItem.exterior_name}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-amber-500">
+                              {latestItem.price ? formatPrice(latestItem.price) : "未设置"}
+                            </div>
+                            <div className="text-xs text-gray-400">当前价格</div>
+                          </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                          <span className="flex items-center gap-1">
-                            <TrendingDown className="w-4 h-4" />
-                            价格: {formatPrice(item.price)}
-                          </span>
-                          <span>位次: #{item.position}</span>
-                          <span>
-                            磨损: {parseFloat(item.abrade).toFixed(4)}
-                          </span>
-                          {item.exterior_name && (
-                            <Badge variant="secondary">
-                              {item.exterior_name}
-                            </Badge>
-                          )}
+
+                        {/* 价格变动时间线 */}
+                        <div className="space-y-2">
+                          <div className="text-xs font-medium text-gray-600 mb-2">
+                            价格变动历史 ({items.length} 次记录):
+                          </div>
+                          <div className="space-y-1.5">
+                            {items.map((item, idx) => {
+                              const prevItem = idx > 0 ? items[idx - 1] : null;
+                              const currentPrice = item.price ? Number(item.price) : 0;
+                              const prevPrice = prevItem && prevItem.price ? Number(prevItem.price) : null;
+                              
+                              let priceChange = null;
+                              if (prevPrice !== null && prevPrice !== currentPrice && currentPrice > 0) {
+                                priceChange = calculatePriceChange(currentPrice, prevPrice);
+                              }
+
+                              const isLatest = idx === items.length - 1;
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`flex items-center gap-3 text-sm p-2 rounded ${
+                                    isLatest ? "bg-amber-50 border border-amber-200" : "bg-gray-50"
+                                  }`}
+                                >
+                                  <div className="text-xs text-gray-400 w-32 flex-shrink-0">
+                                    {formatDate(item.crawl_time)}
+                                  </div>
+                                  
+                                  <div className={`font-semibold ${
+                                    isLatest ? "text-amber-600" : "text-gray-700"
+                                  }`}>
+                                    {item.price ? formatPrice(item.price) : "未设置"}
+                                  </div>
+
+                                  {priceChange && (
+                                    <div className="flex items-center gap-1">
+                                      {priceChange.direction === "up" ? (
+                                        <>
+                                          <TrendingUp className="w-4 h-4 text-red-500" />
+                                          <span className="text-red-500 text-xs font-medium">
+                                            +{formatPrice(priceChange.change)} (+{priceChange.changePercent}%)
+                                          </span>
+                                        </>
+                                      ) : priceChange.direction === "down" ? (
+                                        <>
+                                          <TrendingDown className="w-4 h-4 text-green-500" />
+                                          <span className="text-green-500 text-xs font-medium">
+                                            {formatPrice(priceChange.change)} ({priceChange.changePercent}%)
+                                          </span>
+                                        </>
+                                      ) : null}
+                                    </div>
+                                  )}
+
+                                  {isLatest && (
+                                    <Badge className="ml-auto bg-amber-500 text-white">
+                                      最新
+                                    </Badge>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                        {item.stickers && item.stickers.length > 0 && (
-                          <div className="mt-2 text-xs text-gray-500">
-                            印花: {item.stickers.map((s) => s.Name).join(", ")}
+
+                        {/* 印花信息 */}
+                        {latestItem.stickers && latestItem.stickers.length > 0 && (
+                          <div className="mt-3 pt-3 border-t text-xs text-gray-500">
+                            <span className="font-medium">印花: </span>
+                            {latestItem.stickers.map((s) => s.Name).join(", ")}
                           </div>
                         )}
                       </div>
-                      <div className="text-xs text-gray-500 text-right whitespace-nowrap">
-                        {formatDate(item.crawl_time)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 历史信息 */}
-        {(data.user_info.nickname_history.length > 1 ||
-          data.user_info.store_name_history.length > 1) && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>历史信息</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {data.user_info.nickname_history.length > 1 && (
-                <div className="mb-4">
-                  <div className="text-sm font-medium text-gray-700 mb-2">
-                    昵称历史
-                  </div>
-                  <div className="space-y-2">
-                    {data.user_info.nickname_history.map((record, index) => (
-                      <div
-                        key={index}
-                        className="text-sm text-gray-600 flex items-center gap-2"
-                      >
-                        <span className="font-medium">{record.name}</span>
-                        <span className="text-xs text-gray-400">
-                          ({formatDate(record.first_seen)} ~{" "}
-                          {formatDate(record.last_seen)})
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {data.user_info.store_name_history.length > 1 && (
-                <div>
-                  <div className="text-sm font-medium text-gray-700 mb-2">
-                    店铺名历史
-                  </div>
-                  <div className="space-y-2">
-                    {data.user_info.store_name_history.map((record, index) => (
-                      <div
-                        key={index}
-                        className="text-sm text-gray-600 flex items-center gap-2"
-                      >
-                        <span className="font-medium">{record.name}</span>
-                        <span className="text-xs text-gray-400">
-                          ({formatDate(record.first_seen)} ~{" "}
-                          {formatDate(record.last_seen)})
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         )}
